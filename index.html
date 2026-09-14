@@ -512,7 +512,7 @@
       return;
     }
 
-    if (!/^\\d{4}$/.test(pin)) {
+    if (!/^\d{4}$/.test(pin)) {
       authMessage.textContent = '4桁のPINを入力してください。';
       return;
     }

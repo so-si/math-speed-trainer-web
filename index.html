@@ -1,1058 +1,666 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-  >
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>計算トレーニング</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: #f5f6f8;
-      color: #222;
-    }
-
-    button,
-    select {
-      font: inherit;
-      touch-action: manipulation;
-    }
-
-    .app {
-      max-width: 720px;
-      margin: 0 auto;
       min-height: 100vh;
-      padding: 24px;
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    .card {
-      background: #fff;
+    button, select, input { font: inherit; touch-action: manipulation; }
+    .app { max-width: 760px; margin: 0 auto; padding: 18px; }
+    .panel {
+      background: #111;
+      border: 1px solid #2a2a2a;
       border-radius: 18px;
-      padding: 28px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      padding: 22px;
+      margin-bottom: 16px;
     }
-
-    .hidden {
-      display: none !important;
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 30px;
-      text-align: center;
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    .field {
-      margin: 20px 0;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    select,
-    input[type="password"] {
+    .hidden { display: none !important; }
+    h1 { margin: 0 0 18px; text-align: center; font-size: 30px; }
+    h2 { margin: 0 0 14px; font-size: 22px; }
+    h3 { margin: 18px 0 8px; font-size: 17px; }
+    .field { margin: 16px 0; }
+    label { display: block; margin-bottom: 8px; font-weight: 700; }
+    select, input[type="password"] {
       width: 100%;
+      border: 1px solid #444;
+      background: #1c1c1c;
+      color: #fff;
+      border-radius: 12px;
       padding: 14px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      background: #fff;
       font-size: 18px;
     }
-
     input[type="password"] {
       text-align: center;
-      letter-spacing: 0.35em;
+      letter-spacing: .35em;
       font-variant-numeric: tabular-nums;
     }
-
-    .auth-message {
-      min-height: 22px;
-      margin-top: 10px;
-      text-align: center;
-      font-size: 14px;
-      color: #c62828;
-    }
-
-    .dashboard {
-      margin: 18px 0 24px;
-    }
-
-    .dashboard-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0 0 12px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .stat-card {
-      background: #f3f4f6;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-
-    .stat-value {
-      font-size: 22px;
-      font-weight: 800;
-    }
-
-    .category-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 9px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-    }
-
-    .primary-btn {
+    .primary {
       width: 100%;
-      padding: 16px;
-      border: none;
+      border: 0;
       border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
       font-size: 20px;
+      cursor: pointer;
+    }
+    .primary:disabled { opacity: .45; }
+    .secondary {
+      border: 1px solid #555;
+      border-radius: 10px;
+      padding: 9px 12px;
+      background: #1a1a1a;
+      color: #fff;
       font-weight: 700;
       cursor: pointer;
     }
-
+    .message { min-height: 22px; margin-top: 10px; text-align: center; color: #ff6b6b; }
+    .welcome { text-align: center; font-weight: 800; margin-bottom: 12px; }
+    .rules {
+      background: #181818;
+      border: 1px solid #343434;
+      border-radius: 14px;
+      padding: 14px 16px;
+      line-height: 1.7;
+      margin: 14px 0 18px;
+    }
+    .rules strong { color: #ffd166; }
+    .fail-status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: #181818;
+      margin-bottom: 14px;
+      font-weight: 800;
+    }
+    .fail-status.danger { color: #ff6b6b; }
+    .genre-card {
+      border: 1px solid #303030;
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+      background: #151515;
+    }
+    .genre-card.locked { opacity: .48; }
+    .genre-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .genre-name { font-weight: 800; }
+    .badge {
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: #2a2a2a;
+    }
+    .badge.clear { color: #8be28b; }
+    .badge.lock { color: #aaa; }
+    .best {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #ddd;
+    }
+    .ranking {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    .ranking th, .ranking td {
+      padding: 7px 5px;
+      border-bottom: 1px solid #2b2b2b;
+      text-align: left;
+    }
+    .ranking th:last-child, .ranking td:last-child { text-align: right; }
     .top-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 12px;
-      font-size: 16px;
     }
-
-    .give-up-btn {
-      border: none;
-      border-radius: 10px;
-      padding: 8px 12px;
-      background: #eceff1;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .progress-bar {
-      width: 100%;
+    .timer { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .progress {
       height: 12px;
-      background: #ddd;
+      background: #262626;
       border-radius: 999px;
       overflow: hidden;
       margin-bottom: 22px;
     }
-
-    .progress-inner {
+    .progress > div {
       height: 100%;
       width: 100%;
-      background: #222;
-      transition: width 0.1s linear;
+      background: #fff;
     }
-
     .question {
-      text-align: center;
-      font-size: 56px;
-      font-weight: 700;
-      min-height: 90px;
+      min-height: 120px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 10px 0 14px;
+      font-size: 58px;
+      font-weight: 900;
+      text-align: center;
     }
-
     .answer {
-      width: 100%;
       min-height: 78px;
-      border: 3px solid #333;
+      border: 2px solid #555;
       border-radius: 14px;
-      padding: 8px 18px;
-      font-size: 46px;
-      font-weight: 700;
+      padding: 10px 16px;
+      background: #101010;
+      font-size: 44px;
+      font-weight: 800;
       text-align: right;
-      background: #fff;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
-
     .keypad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 10px;
     }
-
     .key {
-      min-height: 74px;
-      border: none;
+      min-height: 70px;
+      border: 1px solid #383838;
       border-radius: 14px;
-      background: #e7e8eb;
-      font-size: 30px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .key:active {
-      transform: scale(0.97);
-    }
-
-    .submit-key {
-      background: #222;
+      background: #202020;
       color: #fff;
-      font-size: 22px;
+      font-size: 30px;
+      font-weight: 800;
     }
-
+    .key.submit { background: #fff; color: #000; font-size: 20px; }
     .feedback {
-      height: 46px;
       text-align: center;
-      font-size: 34px;
-      font-weight: 700;
+      min-height: 38px;
+      font-size: 28px;
+      font-weight: 900;
       margin-bottom: 8px;
     }
-
-    .correct {
-      color: #16833a;
-    }
-
-    .wrong {
-      color: #c62828;
-    }
-
-    .summary {
-      display: grid;
-      gap: 12px;
-      margin: 24px 0;
-    }
-
-    .summary-item {
-      padding: 14px;
-      background: #f3f4f6;
-      border-radius: 12px;
-      font-size: 18px;
+    .feedback.ok { color: #7bd88f; }
+    .feedback.ng { color: #ff6b6b; }
+    .result-grid { display: grid; gap: 10px; margin: 18px 0; }
+    .result-row {
       display: flex;
       justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      background: #171717;
+      border-radius: 10px;
     }
-
-    .loading {
-      text-align: center;
-      padding: 30px;
-    }
-
     @media (max-width: 600px) {
-      .app {
-        padding: 12px;
-      }
-
-      .card {
-        padding: 18px;
-      }
-
-      .question {
-        font-size: 46px;
-      }
-
-      .answer {
-        font-size: 38px;
-      }
-
-      .key {
-        min-height: 68px;
-      }
+      .app { padding: 10px; }
+      .panel { padding: 16px; }
+      .question { font-size: 48px; }
+      .answer { font-size: 38px; }
+      .key { min-height: 64px; }
     }
   </style>
 </head>
-
 <body>
-  <div class="app">
+<div class="app">
+  <div id="loading" class="panel">読み込み中...</div>
 
-    <div id="loadingScreen" class="card loading">
-      読み込み中...
+  <div id="home" class="panel hidden">
+    <h1>計算トレーニング</h1>
+
+    <div id="loginArea">
+      <div class="field">
+        <label for="pin">4桁PIN</label>
+        <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+        <div id="loginMessage" class="message"></div>
+      </div>
+      <button id="loginBtn" class="primary" onclick="login()">ログイン</button>
     </div>
 
-    <div id="startScreen" class="card hidden">
-      <h1>計算トレーニング</h1>
+    <div id="dashboardArea" class="hidden">
+      <div id="welcome" class="welcome"></div>
 
-      <div id="loginArea">
-        <div class="field">
-          <label for="pinInput">4桁PIN</label>
-          <input
-            id="pinInput"
-            type="password"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            maxlength="4"
-            autocomplete="off"
-            placeholder="••••"
-          >
-          <div id="authMessage" class="auth-message"></div>
-        </div>
-
-        <button
-          id="loginButton"
-          class="primary-btn"
-          onclick="loginStudent()"
-        >
-          ログイン
-        </button>
+      <div class="rules">
+        <strong>ルール</strong><br>
+        ・1セットは20問です。<br>
+        ・<strong>1問でも間違えたら、その時点で失格</strong>です。<br>
+        ・20問すべて正解し、<strong>60秒以内</strong>に終えると次のジャンルが解放されます。<br>
+        ・失格が<strong>1日5回</strong>に達すると、その日は挑戦できません。<br>
+        ・ギブアップと60秒超過も失格1回として数えます。<br>
+        ・各ジャンルの「今日のベスト」と「暦日ごとの歴代ベストTOP10」を記録します。
       </div>
 
-      <div id="trainingArea" class="hidden">
-        <div id="userWelcome" style="text-align:center;font-weight:800;margin-bottom:14px;"></div>
+      <div id="failStatus" class="fail-status"></div>
 
-        <div class="dashboard">
-          <div class="dashboard-title">今日の成績</div>
-          <div id="todayStats" class="stats-grid"></div>
-
-          <div class="dashboard-title">累積成績</div>
-          <div id="totalStats" class="stats-grid"></div>
-
-          <div class="dashboard-title">種目別成績</div>
-          <div id="categoryStats"></div>
-        </div>
-
-        <div class="field">
-          <label for="modeSelect">問題</label>
-          <select id="modeSelect">
-            <option value="add_1_1">1桁 ＋ 1桁</option>
-            <option value="add_2_1">2桁 ＋ 1桁</option>
-            <option value="add_2_2">2桁 ＋ 2桁</option>
-            <option value="multiplication">九九</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="questionCountSelect">問題数</label>
-          <select id="questionCountSelect">
-            <option value="10">10問</option>
-            <option value="20" selected>20問</option>
-            <option value="30">30問</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="timeLimitSelect">1問の制限時間</label>
-          <select id="timeLimitSelect">
-            <option value="5000">5秒</option>
-            <option value="7000">7秒</option>
-            <option value="10000" selected>10秒</option>
-            <option value="15000">15秒</option>
-          </select>
-        </div>
-
-        <button
-          id="startButton"
-          class="primary-btn"
-          onclick="startSession()"
-        >
-          スタート
-        </button>
+      <div class="field">
+        <label for="genreSelect">ジャンル</label>
+        <select id="genreSelect"></select>
       </div>
+
+      <div id="genreStats"></div>
+
+      <button id="startBtn" class="primary" onclick="startChallenge()">スタート</button>
     </div>
-
-    <div id="gameScreen" class="card hidden">
-
-      <div class="top-row">
-        <div id="questionCounter"></div>
-        <button class="give-up-btn" onclick="giveUpSession()">ギブアップ</button>
-        <div id="timerText"></div>
-      </div>
-
-      <div class="progress-bar">
-        <div id="timerBar" class="progress-inner"></div>
-      </div>
-
-      <div id="questionText" class="question"></div>
-
-      <div id="feedback" class="feedback"></div>
-
-      <div id="answerDisplay" class="answer">&nbsp;</div>
-
-      <div class="keypad">
-
-        <button class="key" onclick="inputDigit('7')">7</button>
-        <button class="key" onclick="inputDigit('8')">8</button>
-        <button class="key" onclick="inputDigit('9')">9</button>
-
-        <button class="key" onclick="inputDigit('4')">4</button>
-        <button class="key" onclick="inputDigit('5')">5</button>
-        <button class="key" onclick="inputDigit('6')">6</button>
-
-        <button class="key" onclick="inputDigit('1')">1</button>
-        <button class="key" onclick="inputDigit('2')">2</button>
-        <button class="key" onclick="inputDigit('3')">3</button>
-
-        <button class="key" onclick="backspace()">⌫</button>
-        <button class="key" onclick="inputDigit('0')">0</button>
-        <button
-          class="key submit-key"
-          onclick="submitAnswer()"
-        >
-          決定
-        </button>
-
-      </div>
-    </div>
-
-    <div id="resultScreen" class="card hidden">
-      <h2>結果</h2>
-
-      <div id="summary" class="summary"></div>
-
-      <button
-        class="primary-btn"
-        onclick="returnToStart()"
-      >
-        もう一度
-      </button>
-    </div>
-
   </div>
+
+  <div id="game" class="panel hidden">
+    <div class="top-row">
+      <div id="counter"></div>
+      <button class="secondary" onclick="giveUp()">ギブアップ</button>
+      <div id="timer" class="timer">60.0秒</div>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="question" class="question"></div>
+    <div id="feedback" class="feedback"></div>
+    <div id="answer" class="answer">&nbsp;</div>
+    <div class="keypad">
+      <button class="key" onclick="digit('7')">7</button>
+      <button class="key" onclick="digit('8')">8</button>
+      <button class="key" onclick="digit('9')">9</button>
+      <button class="key" onclick="digit('4')">4</button>
+      <button class="key" onclick="digit('5')">5</button>
+      <button class="key" onclick="digit('6')">6</button>
+      <button class="key" onclick="digit('1')">1</button>
+      <button class="key" onclick="digit('2')">2</button>
+      <button class="key" onclick="digit('3')">3</button>
+      <button class="key" onclick="backspace()">⌫</button>
+      <button class="key" onclick="digit('0')">0</button>
+      <button class="key submit" onclick="submitAnswer()">決定</button>
+    </div>
+  </div>
+
+  <div id="result" class="panel hidden">
+    <h2 id="resultTitle">結果</h2>
+    <div id="resultBody" class="result-grid"></div>
+    <button class="primary" onclick="backHome()">トップへ</button>
+  </div>
+</div>
 
 <script src="./config.js"></script>
 <script>
+const GENRES = [
+  { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
+  { id: 'two_digit_add_sub', name: '二桁の足し算・引き算' },
+  { id: 'multiplication', name: '九九' },
+  { id: 'division_facts', name: '九九（割り算）' },
+  { id: 'two_digit_times_one', name: '二桁 × 1桁' }
+];
 
-  let session = {
-    studentId: null,
-    mode: null,
-    totalQuestions: 20,
-    timeLimitMs: 10000,
-    currentIndex: 0,
-    results: [],
-    sessionToken: null
-  };
+const state = {
+  studentId: null,
+  sessionToken: null,
+  name: '',
+  dashboard: null,
+  genre: null,
+  questions: [],
+  index: 0,
+  input: '',
+  startedAt: 0,
+  accepting: false,
+  timerId: null,
+  finished: false
+};
 
-  let currentQuestion = null;
-  let currentInput = '';
-  let questionStartedAt = 0;
-  let timerInterval = null;
-  let acceptingInput = false;
+document.addEventListener('DOMContentLoaded', () => show('home'));
 
-  document.addEventListener('DOMContentLoaded', () => showScreen('startScreen'));
+function apiRequest(action, payload = {}) {
+  return new Promise((resolve, reject) => {
+    const apiUrl = window.MATH_SPEED_CONFIG && String(window.MATH_SPEED_CONFIG.apiUrl || '').trim();
+    if (!apiUrl) return reject(new Error('GAS API URL が未設定です。'));
 
-  function apiRequest(action, payload = {}) {
-    return new Promise((resolve, reject) => {
-      const apiUrl =
-        window.MATH_SPEED_CONFIG &&
-        String(window.MATH_SPEED_CONFIG.apiUrl || '').trim();
+    const callback = '__msc_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('API通信がタイムアウトしました。'));
+    }, 15000);
 
-      if (!apiUrl) {
-        reject(new Error('GAS API URL が未設定です。config.js を設定してください。'));
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callback];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callback] = response => {
+      cleanup();
+      if (!response || response.success === false) {
+        reject(new Error((response && (response.error || response.message)) || 'APIエラー'));
         return;
       }
-
-      const callbackName =
-        '__mathSpeedCb_' +
-        Date.now() +
-        '_' +
-        Math.random().toString(36).slice(2);
-
-      const script = document.createElement('script');
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(new Error('API通信がタイムアウトしました。'));
-      }, 15000);
-
-      function cleanup() {
-        clearTimeout(timer);
-        delete window[callbackName];
-        if (script.parentNode) script.parentNode.removeChild(script);
-      }
-
-      window[callbackName] = response => {
-        cleanup();
-
-        if (!response || response.success === false) {
-          reject(new Error(
-            response && (response.error || response.message)
-              ? (response.error || response.message)
-              : 'APIエラーが発生しました。'
-          ));
-          return;
-        }
-
-        resolve(response);
-      };
-
-      const params = new URLSearchParams({
-        action,
-        callback: callbackName,
-        payload: JSON.stringify(payload || {})
-      });
-
-      script.src = apiUrl + '?' + params.toString();
-      script.onerror = () => {
-        cleanup();
-        reject(new Error('APIへ接続できませんでした。'));
-      };
-
-      document.body.appendChild(script);
-    });
-  }
-
-  async function loginStudent() {
-    const pin =
-      document.getElementById('pinInput').value.trim();
-
-    const authMessage =
-      document.getElementById('authMessage');
-
-    authMessage.textContent = '';
-
-    if (!/^\d{4}$/.test(pin)) {
-      authMessage.textContent = '4桁のPINを入力してください。';
-      return;
-    }
-
-    const loginButton =
-      document.getElementById('loginButton');
-
-    loginButton.disabled = true;
-    loginButton.textContent = '確認中...';
-
-    try {
-      const response = await apiRequest('authenticateByPin', { pin });
-
-      session.studentId = response.studentId;
-      session.sessionToken = response.token;
-      session.userName = response.name || '';
-
-      document.getElementById('pinInput').value = '';
-      document.getElementById('userWelcome').textContent =
-        session.userName ? session.userName : '';
-
-      await loadStudentStats();
-
-      document.getElementById('loginArea').classList.add('hidden');
-      document.getElementById('trainingArea').classList.remove('hidden');
-    } catch (error) {
-      authMessage.textContent =
-        error.message || '認証に失敗しました。';
-    } finally {
-      loginButton.disabled = false;
-      loginButton.textContent = 'ログイン';
-    }
-  }
-
-  async function loadStudentStats() {
-    const response = await apiRequest('getStudentStats', {
-      studentId: session.studentId,
-      sessionToken: session.sessionToken
-    });
-
-    renderStatsCards('todayStats', response.today || {});
-    renderStatsCards('totalStats', response.total || {});
-
-    const categoryBox = document.getElementById('categoryStats');
-    const categories = response.categories || [];
-
-    if (!categories.length) {
-      categoryBox.innerHTML = '<div style="color:#777;font-size:14px;">まだ成績がありません。</div>';
-      return;
-    }
-
-    const labels = {
-      addition: 'たし算',
-      multiplication: '九九'
+      resolve(response);
     };
 
-    categoryBox.innerHTML = categories.map(item => {
-      const label = labels[item.category] || item.category;
-      return `
-        <div class="category-row">
-          <span>${label}</span>
-          <strong>${Number(item.accuracy || 0).toFixed(1)}%（${item.correct || 0}/${item.attempts || 0}）</strong>
-        </div>
-      `;
-    }).join('');
-  }
+    const params = new URLSearchParams({
+      action,
+      callback,
+      payload: JSON.stringify(payload || {})
+    });
 
-  function renderStatsCards(elementId, stats) {
-    document.getElementById(elementId).innerHTML = `
-      <div class="stat-card">
-        <div class="stat-label">回答数</div>
-        <div class="stat-value">${stats.attempts || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">正答率</div>
-        <div class="stat-value">${Number(stats.accuracy || 0).toFixed(1)}%</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">正解数</div>
-        <div class="stat-value">${stats.correct || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">平均回答時間</div>
-        <div class="stat-value">${(Number(stats.avgResponseMs || 0) / 1000).toFixed(2)}秒</div>
-      </div>
-    `;
-  }
-
-  function startSession() {
-    if (!session.studentId || !session.sessionToken) {
-      document.getElementById('trainingArea').classList.add('hidden');
-      document.getElementById('loginArea').classList.remove('hidden');
-      return;
-    }
-
-    session.mode = document.getElementById('modeSelect').value;
-    session.totalQuestions =
-      Number(document.getElementById('questionCountSelect').value);
-    session.timeLimitMs =
-      Number(document.getElementById('timeLimitSelect').value);
-    session.currentIndex = 0;
-    session.results = [];
-
-    showScreen('gameScreen');
-    nextQuestion();
-  }
-
-  function nextQuestion() {
-
-    clearTimer();
-
-    if (session.currentIndex >= session.totalQuestions) {
-      finishSession();
-      return;
-    }
-
-    currentQuestion = generateQuestion(session.mode);
-
-    currentInput = '';
-    acceptingInput = true;
-
-    document.getElementById('feedback').textContent = '';
-    document.getElementById('feedback').className = 'feedback';
-
-    updateAnswerDisplay();
-
-    document.getElementById('questionCounter').textContent =
-      `${session.currentIndex + 1} / ${session.totalQuestions}`;
-
-    document.getElementById('questionText').textContent =
-      currentQuestion.text;
-
-    questionStartedAt = performance.now();
-
-    startTimer();
-  }
-
-  function generateQuestion(mode) {
-
-    let a;
-    let b;
-    let answer;
-    let text;
-    let category;
-    let level;
-
-    switch (mode) {
-
-      case 'add_1_1':
-
-        a = randomInt(1, 9);
-        b = randomInt(1, 9);
-
-        answer = a + b;
-        text = `${a} ＋ ${b}`;
-        category = 'addition';
-        level = '1digit_1digit';
-
-        break;
-
-      case 'add_2_1':
-
-        a = randomInt(10, 99);
-        b = randomInt(1, 9);
-
-        answer = a + b;
-        text = `${a} ＋ ${b}`;
-        category = 'addition';
-        level = '2digit_1digit';
-
-        break;
-
-      case 'add_2_2':
-
-        a = randomInt(10, 99);
-        b = randomInt(10, 99);
-
-        answer = a + b;
-        text = `${a} ＋ ${b}`;
-        category = 'addition';
-        level = '2digit_2digit';
-
-        break;
-
-      case 'multiplication':
-
-        a = randomInt(1, 9);
-        b = randomInt(1, 9);
-
-        answer = a * b;
-        text = `${a} × ${b}`;
-        category = 'multiplication';
-        level = 'kuku';
-
-        break;
-
-      default:
-
-        throw new Error('未対応の問題タイプです。');
-    }
-
-    return {
-      a,
-      b,
-      answer,
-      text,
-      category,
-      level
+    script.src = apiUrl + '?' + params.toString();
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('APIへ接続できませんでした。'));
     };
+    document.body.appendChild(script);
+  });
+}
+
+async function login() {
+  const pin = document.getElementById('pin').value.trim();
+  const message = document.getElementById('loginMessage');
+  message.textContent = '';
+
+  if (!/^\d{4}$/.test(pin)) {
+    message.textContent = '4桁のPINを入力してください。';
+    return;
   }
 
-  function randomInt(min, max) {
-    return Math.floor(
-      Math.random() * (max - min + 1)
-    ) + min;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = '確認中...';
+
+  try {
+    const response = await apiRequest('authenticateByPin', { pin });
+    state.studentId = response.studentId;
+    state.sessionToken = response.token;
+    state.name = response.name || '';
+    document.getElementById('pin').value = '';
+    await refreshDashboard();
+    document.getElementById('loginArea').classList.add('hidden');
+    document.getElementById('dashboardArea').classList.remove('hidden');
+  } catch (e) {
+    message.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+  }
+}
+
+async function refreshDashboard() {
+  const d = await apiRequest('getDashboard', authPayload());
+  state.dashboard = d;
+  document.getElementById('welcome').textContent = state.name ? state.name + ' さん' : '';
+  const failStatus = document.getElementById('failStatus');
+  failStatus.textContent = '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
+  failStatus.classList.toggle('danger', d.todayFails >= d.failLimit);
+
+  const select = document.getElementById('genreSelect');
+  select.innerHTML = '';
+  d.genres.forEach(g => {
+    const option = document.createElement('option');
+    option.value = g.id;
+    option.textContent = g.unlocked ? g.name : '🔒 ' + g.name;
+    option.disabled = !g.unlocked;
+    select.appendChild(option);
+  });
+
+  renderGenreStats(d.genres);
+  document.getElementById('startBtn').disabled = d.lockedForToday;
+}
+
+function renderGenreStats(genres) {
+  const box = document.getElementById('genreStats');
+  box.innerHTML = genres.map(g => {
+    const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
+    const rows = (g.ranking || []).map((r, i) =>
+      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+    ).join('');
+
+    return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
+      '<div class="genre-head">' +
+        '<div class="genre-name">' + escapeHtml(g.name) + '</div>' +
+        '<div class="badge ' + (g.cleared ? 'clear' : (g.unlocked ? '' : 'lock')) + '">' +
+          (g.cleared ? 'クリア済み' : (g.unlocked ? '挑戦可' : '未解放')) +
+        '</div>' +
+      '</div>' +
+      '<div class="best">今日のベスト：<strong>' + todayBest + '</strong></div>' +
+      '<h3>過去のベストタイムランキング（暦日）</h3>' +
+      (rows
+        ? '<table class="ranking"><thead><tr><th>順位</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="best">まだ記録がありません。</div>') +
+    '</div>';
+  }).join('');
+}
+
+async function startChallenge() {
+  const genre = document.getElementById('genreSelect').value;
+  if (!genre) return;
+
+  const response = await apiRequest('startChallenge', {
+    ...authPayload(),
+    genre
+  });
+
+  state.genre = genre;
+  state.questions = generateSet(genre, response.questionCount || 20);
+  state.index = 0;
+  state.input = '';
+  state.startedAt = performance.now();
+  state.accepting = true;
+  state.finished = false;
+
+  show('game');
+  showQuestion();
+  startMasterTimer(response.clearTimeMs || 60000);
+}
+
+function generateSet(genre, count) {
+  const out = [];
+  const seen = new Set();
+  let guard = 0;
+
+  while (out.length < count && guard < 5000) {
+    guard++;
+    const q = generateQuestion(genre);
+    const key = q.text;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(q);
   }
 
-  function inputDigit(digit) {
+  while (out.length < count) out.push(generateQuestion(genre));
+  return out;
+}
 
-    if (!acceptingInput) return;
+function generateQuestion(genre) {
+  let a, b, op, answer;
 
-    if (currentInput.length >= 6) return;
-
-    if (currentInput === '0') {
-      currentInput = digit;
+  if (genre === 'one_digit_add_sub') {
+    op = Math.random() < 0.5 ? '+' : '-';
+    if (op === '+') {
+      a = rnd(0, 9); b = rnd(0, 9); answer = a + b;
     } else {
-      currentInput += digit;
+      a = rnd(0, 9); b = rnd(0, a); answer = a - b;
     }
-
-    updateAnswerDisplay();
-  }
-
-  function backspace() {
-
-    if (!acceptingInput) return;
-
-    currentInput =
-      currentInput.slice(0, -1);
-
-    updateAnswerDisplay();
-  }
-
-  function updateAnswerDisplay() {
-
-    const display =
-      document.getElementById('answerDisplay');
-
-    display.textContent =
-      currentInput === ''
-        ? '\u00a0'
-        : currentInput;
-  }
-
-  function submitAnswer() {
-
-    if (!acceptingInput) return;
-    if (currentInput === '') return;
-
-    const elapsed =
-      Math.round(performance.now() - questionStartedAt);
-
-    const userAnswer =
-      Number(currentInput);
-
-    const isCorrect =
-      userAnswer === currentQuestion.answer;
-
-    recordResult({
-      userAnswer,
-      isCorrect,
-      responseMs: elapsed,
-      timedOut: false
-    });
-
-    showFeedback(isCorrect);
-  }
-
-  function timeOutQuestion() {
-
-    if (!acceptingInput) return;
-
-    recordResult({
-      userAnswer:
-        currentInput === ''
-          ? null
-          : Number(currentInput),
-      isCorrect: false,
-      responseMs: session.timeLimitMs,
-      timedOut: true
-    });
-
-    showFeedback(false, true);
-  }
-
-  function recordResult({
-    userAnswer,
-    isCorrect,
-    responseMs,
-    timedOut
-  }) {
-
-    acceptingInput = false;
-
-    clearTimer();
-
-    session.results.push({
-      category: currentQuestion.category,
-      level: currentQuestion.level,
-      question: currentQuestion.text,
-      correctAnswer: currentQuestion.answer,
-      userAnswer,
-      isCorrect,
-      responseMs,
-      timedOut
-    });
-
-    session.currentIndex += 1;
-  }
-
-  function showFeedback(isCorrect, timedOut = false) {
-
-    const feedback =
-      document.getElementById('feedback');
-
-    if (timedOut) {
-      feedback.textContent =
-        `時間切れ　答え：${currentQuestion.answer}`;
-      feedback.className = 'feedback wrong';
-    } else if (isCorrect) {
-      feedback.textContent = '○';
-      feedback.className = 'feedback correct';
+  } else if (genre === 'two_digit_add_sub') {
+    op = Math.random() < 0.5 ? '+' : '-';
+    if (op === '+') {
+      a = rnd(10, 99); b = rnd(10, 99); answer = a + b;
     } else {
-      feedback.textContent =
-        `×　答え：${currentQuestion.answer}`;
-      feedback.className = 'feedback wrong';
+      a = rnd(10, 99); b = rnd(10, a); answer = a - b;
     }
-
-    setTimeout(nextQuestion, 650);
+  } else if (genre === 'multiplication') {
+    a = rnd(1, 9); b = rnd(1, 9); op = '×'; answer = a * b;
+  } else if (genre === 'division_facts') {
+    const x = rnd(1, 9);
+    const y = rnd(1, 9);
+    a = x * y; b = x; op = '÷'; answer = y;
+  } else if (genre === 'two_digit_times_one') {
+    a = rnd(10, 99); b = rnd(1, 9); op = '×'; answer = a * b;
+  } else {
+    throw new Error('未対応ジャンル');
   }
 
-  function startTimer() {
+  return { text: a + ' ' + op + ' ' + b, answer };
+}
 
-    const bar =
-      document.getElementById('timerBar');
+function rnd(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-    const timerText =
-      document.getElementById('timerText');
+function showQuestion() {
+  const q = state.questions[state.index];
+  state.input = '';
+  state.accepting = true;
+  document.getElementById('counter').textContent = (state.index + 1) + ' / 20';
+  document.getElementById('question').textContent = q.text;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  updateAnswer();
+}
 
-    bar.style.width = '100%';
+function digit(d) {
+  if (!state.accepting || state.input.length >= 6) return;
+  state.input = state.input === '0' ? d : state.input + d;
+  updateAnswer();
+}
 
-    timerInterval = setInterval(() => {
+function backspace() {
+  if (!state.accepting) return;
+  state.input = state.input.slice(0, -1);
+  updateAnswer();
+}
 
-      const elapsed =
-        performance.now() - questionStartedAt;
+function updateAnswer() {
+  document.getElementById('answer').textContent = state.input || '\u00a0';
+}
 
-      const remaining =
-        Math.max(
-          0,
-          session.timeLimitMs - elapsed
-        );
+function submitAnswer() {
+  if (!state.accepting || state.input === '' || state.finished) return;
 
-      const ratio =
-        remaining / session.timeLimitMs;
+  const q = state.questions[state.index];
+  const value = Number(state.input);
+  state.accepting = false;
 
-      bar.style.width =
-        `${ratio * 100}%`;
-
-      timerText.textContent =
-        `${(remaining / 1000).toFixed(1)}秒`;
-
-      if (remaining <= 0) {
-        clearTimer();
-        timeOutQuestion();
-      }
-
-    }, 50);
+  if (value !== q.answer) {
+    document.getElementById('feedback').textContent = '失格';
+    document.getElementById('feedback').className = 'feedback ng';
+    finish(false, 'wrong_answer', q, value);
+    return;
   }
 
-  function clearTimer() {
+  state.index++;
 
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
+  if (state.index >= 20) {
+    finish(true, '', q, value);
+    return;
+  }
+
+  document.getElementById('feedback').textContent = '○';
+  document.getElementById('feedback').className = 'feedback ok';
+  setTimeout(showQuestion, 180);
+}
+
+function startMasterTimer(limitMs) {
+  clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    if (state.finished) return;
+    const elapsed = performance.now() - state.startedAt;
+    const remaining = Math.max(0, limitMs - elapsed);
+    document.getElementById('timer').textContent = (remaining / 1000).toFixed(1) + '秒';
+    document.getElementById('progressBar').style.width = ((remaining / limitMs) * 100) + '%';
+
+    if (remaining <= 0) {
+      const q = state.questions[state.index] || null;
+      finish(false, 'time_over', q, state.input === '' ? null : Number(state.input));
     }
-  }
+  }, 50);
+}
 
-  function giveUpSession() {
-    if (!confirm('ここでトレーニングを終了しますか？\nここまでの結果は保存されます。')) {
-      return;
-    }
+function giveUp() {
+  if (state.finished) return;
+  if (!confirm('ギブアップしますか？\n失格1回として記録されます。')) return;
+  const q = state.questions[state.index] || null;
+  finish(false, 'give_up', q, state.input === '' ? null : Number(state.input));
+}
 
-    acceptingInput = false;
-    clearTimer();
-    finishSession(true);
-  }
+async function finish(success, failReason, failedQuestion, userAnswer) {
+  if (state.finished) return;
+  state.finished = true;
+  state.accepting = false;
+  clearInterval(state.timerId);
 
-  function finishSession(gaveUp = false) {
+  const elapsedMs = Math.round(performance.now() - state.startedAt);
+  const effectiveSuccess = success && elapsedMs <= 60000;
+  const reason = effectiveSuccess ? '' : (failReason || 'time_over');
 
-    clearTimer();
-
-    const results = session.results;
-
-    const correctCount =
-      results.filter(r => r.isCorrect).length;
-
-    const timeoutCount =
-      results.filter(r => r.timedOut).length;
-
-    const accuracy =
-      results.length === 0
-        ? 0
-        : correctCount / results.length * 100;
-
-    const answeredResults =
-      results.filter(r => !r.timedOut);
-
-    const avgResponseMs =
-      answeredResults.length === 0
-        ? 0
-        : answeredResults.reduce(
-            (sum, r) => sum + r.responseMs,
-            0
-          ) / answeredResults.length;
-
-    const totalMinutes =
-      results.reduce(
-        (sum, r) => sum + r.responseMs,
-        0
-      ) / 60000;
-
-    const correctPerMinute =
-      totalMinutes > 0
-        ? correctCount / totalMinutes
-        : 0;
-
-    document.getElementById('summary').innerHTML = `
-      ${session.userName ? '<div class="summary-item"><span>ユーザー</span><strong>' + session.userName + '</strong></div>' : ''}
-      ${gaveUp ? '<div class="summary-item"><span>状態</span><strong>途中終了</strong></div>' : ''}
-      <div class="summary-item">
-        <span>正解</span>
-        <strong>${correctCount} / ${results.length}</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>正答率</span>
-        <strong>${accuracy.toFixed(1)}%</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>平均回答時間</span>
-        <strong>${(avgResponseMs / 1000).toFixed(2)}秒</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>時間切れ</span>
-        <strong>${timeoutCount}問</strong>
-      </div>
-
-      <div class="summary-item">
-        <span>1分あたり正解数</span>
-        <strong>${correctPerMinute.toFixed(1)}問</strong>
-      </div>
-    `;
-
-    showScreen('resultScreen');
-
-    apiRequest('saveResults', {
-      studentId: session.studentId,
-      sessionToken: session.sessionToken,
-      results: session.results
-    })
-      .then(response => {
-        console.log('保存完了', response);
-      })
-      .catch(error => {
-        console.error('保存失敗', error);
-        alert(
-          '成績の保存に失敗しました。\\n' +
-          error.message
-        );
-      });
-  }
-
-  async function returnToStart() {
-    showScreen('startScreen');
-
-    if (session.studentId && session.sessionToken) {
-      document.getElementById('loginArea').classList.add('hidden');
-      document.getElementById('trainingArea').classList.remove('hidden');
-      try {
-        await loadStudentStats();
-      } catch (error) {
-        console.warn(error);
-      }
-    }
-  }
-
-  function showScreen(screenId) {
-
-    [
-      'loadingScreen',
-      'startScreen',
-      'gameScreen',
-      'resultScreen'
-    ].forEach(id => {
-      document
-        .getElementById(id)
-        .classList.add('hidden');
+  try {
+    const response = await apiRequest('saveAttempt', {
+      ...authPayload(),
+      genre: state.genre,
+      success: effectiveSuccess,
+      elapsedMs,
+      failReason: reason,
+      answeredCount: effectiveSuccess ? 20 : state.index,
+      failedQuestion: failedQuestion ? failedQuestion.text : '',
+      userAnswer: userAnswer,
+      correctAnswer: failedQuestion ? failedQuestion.answer : null
     });
 
-    document
-      .getElementById(screenId)
-      .classList.remove('hidden');
+    state.dashboard = response.dashboard || null;
+  } catch (e) {
+    alert('結果保存に失敗しました。\n' + e.message);
   }
 
-  function showError(error) {
+  const title = effectiveSuccess ? 'クリア！' : '失格';
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultBody').innerHTML =
+    '<div class="result-row"><span>タイム</span><strong>' + formatTime(elapsedMs) + '</strong></div>' +
+    '<div class="result-row"><span>回答</span><strong>' + (effectiveSuccess ? 20 : state.index) + ' / 20</strong></div>' +
+    (effectiveSuccess
+      ? '<div class="result-row"><span>判定</span><strong>次ジャンル解放条件クリア</strong></div>'
+      : '<div class="result-row"><span>判定</span><strong>' + failReasonLabel(reason) + '</strong></div>');
 
-    console.error(error);
+  show('result');
+}
 
-    document.getElementById('loadingScreen').innerHTML =
-      `
-        <strong>エラー</strong><br><br>
-        ${error.message || error}
-      `;
+function failReasonLabel(reason) {
+  if (reason === 'wrong_answer') return '誤答';
+  if (reason === 'time_over') return '60秒超過';
+  if (reason === 'give_up') return 'ギブアップ';
+  return '失格';
+}
+
+async function backHome() {
+  show('home');
+  document.getElementById('loginArea').classList.add('hidden');
+  document.getElementById('dashboardArea').classList.remove('hidden');
+  try {
+    await refreshDashboard();
+  } catch (e) {
+    console.warn(e);
   }
+}
 
+function authPayload() {
+  return {
+    studentId: state.studentId,
+    sessionToken: state.sessionToken
+  };
+}
+
+function formatTime(ms) {
+  if (ms == null) return '—';
+  return (Number(ms) / 1000).toFixed(2) + '秒';
+}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function show(id) {
+  ['loading', 'home', 'game', 'result'].forEach(x => document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
 </script>
-
 </body>
 </html>

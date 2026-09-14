@@ -286,7 +286,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-jsonp-flashcards';
+const APP_VERSION = '2026-09-15-fast-login';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -382,9 +382,26 @@ async function login() {
     state.sessionToken = response.token;
     state.name = response.name || '';
     document.getElementById('pin').value = '';
-    await refreshDashboard();
+
+    document.getElementById('welcome').textContent =
+      state.name ? state.name + ' さん' : '';
+    document.getElementById('failStatus').textContent = '成績を読み込み中...';
+    document.getElementById('genreStats').innerHTML =
+      '<div class="best">ランキングを読み込み中...</div>';
+    document.getElementById('startBtn').disabled = true;
+
     document.getElementById('loginArea').classList.add('hidden');
     document.getElementById('dashboardArea').classList.remove('hidden');
+
+    refreshDashboard().catch(e => {
+      console.warn(e);
+      if (isAuthError(e)) {
+        resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+      } else {
+        document.getElementById('failStatus').textContent =
+          '成績の読み込みに失敗しました。';
+      }
+    });
   } catch (e) {
     message.textContent = e.message;
   } finally {
@@ -448,19 +465,29 @@ async function refreshDashboard() {
     select.appendChild(option);
   });
 
+  select.onchange = () => renderGenreStats(d.genres);
   renderGenreStats(d.genres);
   document.getElementById('startBtn').disabled = d.lockedForToday;
 }
 
 function renderGenreStats(genres) {
   const box = document.getElementById('genreStats');
-  box.innerHTML = genres.map(g => {
-    const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
-    const rows = (g.ranking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.dateLabel || r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
-    ).join('');
+  const selectedId = document.getElementById('genreSelect').value;
+  const g = genres.find(x => x.id === selectedId) || genres.find(x => x.unlocked) || genres[0];
 
-    return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
+  if (!g) {
+    box.innerHTML = '';
+    return;
+  }
+
+  const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
+  const rows = (g.ranking || []).map((r, i) =>
+    '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' +
+    escapeHtml(r.dateLabel || r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+  ).join('');
+
+  box.innerHTML =
+    '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
       '<div class="genre-head">' +
         '<div class="genre-name">' + escapeHtml(g.name) + '</div>' +
         '<div class="badge ' + (g.cleared ? 'clear' : (g.unlocked ? '' : 'lock')) + '">' +
@@ -473,7 +500,6 @@ function renderGenreStats(genres) {
         ? '<table class="ranking"><thead><tr><th>順位</th><th>ユーザー</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + rows + '</tbody></table>'
         : '<div class="best">まだ記録がありません。</div>') +
     '</div>';
-  }).join('');
 }
 
 async function startChallenge() {

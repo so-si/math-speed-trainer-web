@@ -492,12 +492,12 @@ function renderGenreStats(genres) {
 
     const allRows = (g.ranking || []).map((r, i) =>
       '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' +
-      escapeHtml(r.dateLabel || formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
     const personalRows = (g.personalRanking || []).map((r, i) =>
       '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(state.name || '') + '</td><td>' +
-      escapeHtml(r.dateLabel || formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
     return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
@@ -757,11 +757,16 @@ function authPayload() {
 }
 
 function formatDateClient(dateKey) {
-  const m = String(dateKey || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return String(dateKey || '');
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const s = String(dateKey || '').trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return s;
+
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
   const dt = new Date(y, mo - 1, d);
   const w = ['日','月','火','水','木','金','土'][dt.getDay()];
+
   return mo + '月' + d + '日（' + w + '）';
 }
 

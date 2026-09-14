@@ -91,6 +91,49 @@
       color: #c62828;
     }
 
+    .dashboard {
+      margin: 18px 0 24px;
+    }
+
+    .dashboard-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat-card {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .category-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
     .primary-btn {
       width: 100%;
       padding: 16px;
@@ -256,56 +299,81 @@
     <div id="startScreen" class="card hidden">
       <h1>計算トレーニング</h1>
 
-      <div class="field">
-        <label for="pinInput">4桁PIN</label>
-        <input
-          id="pinInput"
-          type="password"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          maxlength="4"
-          autocomplete="off"
-          placeholder="••••"
+      <div id="loginArea">
+        <div class="field">
+          <label for="pinInput">4桁PIN</label>
+          <input
+            id="pinInput"
+            type="password"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="4"
+            autocomplete="off"
+            placeholder="••••"
+          >
+          <div id="authMessage" class="auth-message"></div>
+        </div>
+
+        <button
+          id="loginButton"
+          class="primary-btn"
+          onclick="loginStudent()"
         >
-        <div id="authMessage" class="auth-message"></div>
+          ログイン
+        </button>
       </div>
 
-      <div class="field">
-        <label for="modeSelect">問題</label>
-        <select id="modeSelect">
-          <option value="add_1_1">1桁 ＋ 1桁</option>
-          <option value="add_2_1">2桁 ＋ 1桁</option>
-          <option value="add_2_2">2桁 ＋ 2桁</option>
-          <option value="multiplication">九九</option>
-        </select>
-      </div>
+      <div id="trainingArea" class="hidden">
+        <div id="userWelcome" style="text-align:center;font-weight:800;margin-bottom:14px;"></div>
 
-      <div class="field">
-        <label for="questionCountSelect">問題数</label>
-        <select id="questionCountSelect">
-          <option value="10">10問</option>
-          <option value="20" selected>20問</option>
-          <option value="30">30問</option>
-        </select>
-      </div>
+        <div class="dashboard">
+          <div class="dashboard-title">今日の成績</div>
+          <div id="todayStats" class="stats-grid"></div>
 
-      <div class="field">
-        <label for="timeLimitSelect">1問の制限時間</label>
-        <select id="timeLimitSelect">
-          <option value="5000">5秒</option>
-          <option value="7000">7秒</option>
-          <option value="10000" selected>10秒</option>
-          <option value="15000">15秒</option>
-        </select>
-      </div>
+          <div class="dashboard-title">累積成績</div>
+          <div id="totalStats" class="stats-grid"></div>
 
-      <button
-        id="startButton"
-        class="primary-btn"
-        onclick="startSession()"
-      >
-        スタート
-      </button>
+          <div class="dashboard-title">種目別成績</div>
+          <div id="categoryStats"></div>
+        </div>
+
+        <div class="field">
+          <label for="modeSelect">問題</label>
+          <select id="modeSelect">
+            <option value="add_1_1">1桁 ＋ 1桁</option>
+            <option value="add_2_1">2桁 ＋ 1桁</option>
+            <option value="add_2_2">2桁 ＋ 2桁</option>
+            <option value="multiplication">九九</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="questionCountSelect">問題数</label>
+          <select id="questionCountSelect">
+            <option value="10">10問</option>
+            <option value="20" selected>20問</option>
+            <option value="30">30問</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="timeLimitSelect">1問の制限時間</label>
+          <select id="timeLimitSelect">
+            <option value="5000">5秒</option>
+            <option value="7000">7秒</option>
+            <option value="10000" selected>10秒</option>
+            <option value="15000">15秒</option>
+          </select>
+        </div>
+
+        <button
+          id="startButton"
+          class="primary-btn"
+          onclick="startSession()"
+        >
+          スタート
+        </button>
+      </div>
     </div>
 
     <div id="gameScreen" class="card hidden">
@@ -448,8 +516,7 @@
     });
   }
 
-  async function startSession() {
-
+  async function loginStudent() {
     const pin =
       document.getElementById('pinInput').value.trim();
 
@@ -463,41 +530,107 @@
       return;
     }
 
-    const startButton =
-      document.getElementById('startButton');
+    const loginButton =
+      document.getElementById('loginButton');
 
-    startButton.disabled = true;
-    startButton.textContent = '確認中...';
+    loginButton.disabled = true;
+    loginButton.textContent = '確認中...';
 
     try {
-      const response = await apiRequest('authenticateByPin', {
-        pin
-      });
+      const response = await apiRequest('authenticateByPin', { pin });
 
-      session = {
-        studentId: response.studentId,
-        mode: document.getElementById('modeSelect').value,
-        totalQuestions:
-          Number(document.getElementById('questionCountSelect').value),
-        timeLimitMs:
-          Number(document.getElementById('timeLimitSelect').value),
-        currentIndex: 0,
-        results: [],
-        sessionToken: response.token,
-        userName: response.name || ''
-      };
+      session.studentId = response.studentId;
+      session.sessionToken = response.token;
+      session.userName = response.name || '';
 
       document.getElementById('pinInput').value = '';
+      document.getElementById('userWelcome').textContent =
+        session.userName ? session.userName : '';
 
-      showScreen('gameScreen');
-      nextQuestion();
+      await loadStudentStats();
+
+      document.getElementById('loginArea').classList.add('hidden');
+      document.getElementById('trainingArea').classList.remove('hidden');
     } catch (error) {
       authMessage.textContent =
         error.message || '認証に失敗しました。';
     } finally {
-      startButton.disabled = false;
-      startButton.textContent = 'スタート';
+      loginButton.disabled = false;
+      loginButton.textContent = 'ログイン';
     }
+  }
+
+  async function loadStudentStats() {
+    const response = await apiRequest('getStudentStats', {
+      studentId: session.studentId,
+      sessionToken: session.sessionToken
+    });
+
+    renderStatsCards('todayStats', response.today || {});
+    renderStatsCards('totalStats', response.total || {});
+
+    const categoryBox = document.getElementById('categoryStats');
+    const categories = response.categories || [];
+
+    if (!categories.length) {
+      categoryBox.innerHTML = '<div style="color:#777;font-size:14px;">まだ成績がありません。</div>';
+      return;
+    }
+
+    const labels = {
+      addition: 'たし算',
+      multiplication: '九九'
+    };
+
+    categoryBox.innerHTML = categories.map(item => {
+      const label = labels[item.category] || item.category;
+      return `
+        <div class="category-row">
+          <span>${label}</span>
+          <strong>${Number(item.accuracy || 0).toFixed(1)}%（${item.correct || 0}/${item.attempts || 0}）</strong>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderStatsCards(elementId, stats) {
+    document.getElementById(elementId).innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">回答数</div>
+        <div class="stat-value">${stats.attempts || 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">正答率</div>
+        <div class="stat-value">${Number(stats.accuracy || 0).toFixed(1)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">正解数</div>
+        <div class="stat-value">${stats.correct || 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">平均回答時間</div>
+        <div class="stat-value">${(Number(stats.avgResponseMs || 0) / 1000).toFixed(2)}秒</div>
+      </div>
+    `;
+  }
+
+  function startSession() {
+    if (!session.studentId || !session.sessionToken) {
+      document.getElementById('trainingArea').classList.add('hidden');
+      document.getElementById('loginArea').classList.remove('hidden');
+      return;
+    }
+
+    session.mode = document.getElementById('modeSelect').value;
+    session.totalQuestions =
+      Number(document.getElementById('questionCountSelect').value);
+    session.timeLimitMs =
+      Number(document.getElementById('timeLimitSelect').value);
+    session.currentIndex = 0;
+    session.results = [];
+
+    showScreen('gameScreen');
+    nextQuestion();
   }
 
   function nextQuestion() {
@@ -876,11 +1009,18 @@
       });
   }
 
-  function returnToStart() {
-    session.sessionToken = null;
-    document.getElementById('pinInput').value = '';
-    document.getElementById('authMessage').textContent = '';
+  async function returnToStart() {
     showScreen('startScreen');
+
+    if (session.studentId && session.sessionToken) {
+      document.getElementById('loginArea').classList.add('hidden');
+      document.getElementById('trainingArea').classList.remove('hidden');
+      try {
+        await loadStudentStats();
+      } catch (error) {
+        console.warn(error);
+      }
+    }
   }
 
   function showScreen(screenId) {

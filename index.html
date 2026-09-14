@@ -256,11 +256,6 @@
     <div id="startScreen" class="card hidden">
       <h1>計算トレーニング</h1>
 
-      <div id="studentField" class="field">
-        <label for="studentSelect">生徒</label>
-        <select id="studentSelect"></select>
-      </div>
-
       <div class="field">
         <label for="pinInput">4桁PIN</label>
         <input
@@ -375,8 +370,6 @@
 <script src="./config.js"></script>
 <script>
 
-  let students = [];
-
   let session = {
     studentId: null,
     mode: null,
@@ -393,7 +386,7 @@
   let timerInterval = null;
   let acceptingInput = false;
 
-  document.addEventListener('DOMContentLoaded', loadStudents);
+  document.addEventListener('DOMContentLoaded', () => showScreen('startScreen'));
 
   function apiRequest(action, payload = {}) {
     return new Promise((resolve, reject) => {
@@ -455,49 +448,7 @@
     });
   }
 
-  async function loadStudents() {
-    try {
-      const response = await apiRequest('getStudents');
-      students = response.students || [];
-
-      const select = document.getElementById('studentSelect');
-      select.innerHTML = '';
-
-      if (students.length === 0) {
-        const option = document.createElement('option');
-        option.textContent = '生徒が登録されていません';
-        option.value = '';
-        select.appendChild(option);
-      } else {
-        students.forEach(student => {
-          const option = document.createElement('option');
-          option.value = student.studentId;
-          option.textContent =
-            student.name +
-            (student.grade ? `（${student.grade}年）` : '');
-          select.appendChild(option);
-        });
-
-        const singleStudentMode =
-          window.MATH_SPEED_CONFIG &&
-          window.MATH_SPEED_CONFIG.singleStudentMode === true;
-
-        if (singleStudentMode) {
-          select.value = students[0].studentId;
-          document.getElementById('studentField').classList.add('hidden');
-        }
-      }
-
-      showScreen('startScreen');
-    } catch (error) {
-      showError(error);
-    }
-  }
-
   async function startSession() {
-
-    const studentId =
-      document.getElementById('studentSelect').value;
 
     const pin =
       document.getElementById('pinInput').value.trim();
@@ -506,11 +457,6 @@
       document.getElementById('authMessage');
 
     authMessage.textContent = '';
-
-    if (!studentId) {
-      authMessage.textContent = '生徒を選択してください。';
-      return;
-    }
 
     if (!/^\d{4}$/.test(pin)) {
       authMessage.textContent = '4桁のPINを入力してください。';
@@ -524,13 +470,12 @@
     startButton.textContent = '確認中...';
 
     try {
-      const response = await apiRequest('authenticateStudent', {
-        studentId,
+      const response = await apiRequest('authenticateByPin', {
         pin
       });
 
       session = {
-        studentId,
+        studentId: response.studentId,
         mode: document.getElementById('modeSelect').value,
         totalQuestions:
           Number(document.getElementById('questionCountSelect').value),
@@ -538,7 +483,8 @@
           Number(document.getElementById('timeLimitSelect').value),
         currentIndex: 0,
         results: [],
-        sessionToken: response.token
+        sessionToken: response.token,
+        userName: response.name || ''
       };
 
       document.getElementById('pinInput').value = '';
@@ -883,6 +829,7 @@
         : 0;
 
     document.getElementById('summary').innerHTML = `
+      ${session.userName ? '<div class="summary-item"><span>ユーザー</span><strong>' + session.userName + '</strong></div>' : ''}
       ${gaveUp ? '<div class="summary-item"><span>状態</span><strong>途中終了</strong></div>' : ''}
       <div class="summary-item">
         <span>正解</span>

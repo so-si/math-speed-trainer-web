@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html>
+<head>
+  
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: #f5f6f8;
+      color: #222;
+    }
+
+    button,
+    select {
+      font: inherit;
+      touch-action: manipulation;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 30px;
+      text-align: center;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .field {
+      margin: 20px 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    select,
+    input[type="password"] {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 18px;
+    }
+
+    input[type="password"] {
+      text-align: center;
+      letter-spacing: 0.35em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .auth-message {
+      min-height: 22px;
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+      color: #c62828;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .give-up-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      background: #eceff1;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      background: #ddd;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .progress-inner {
+      height: 100%;
+      width: 100%;
+      background: #222;
+      transition: width 0.1s linear;
+    }
+
+    .question {
+      text-align: center;
+      font-size: 56px;
+      font-weight: 700;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0 14px;
+    }
+
+    .answer {
+      width: 100%;
+      min-height: 78px;
+      border: 3px solid #333;
+      border-radius: 14px;
+      padding: 8px 18px;
+      font-size: 46px;
+      font-weight: 700;
+      text-align: right;
+      background: #fff;
+      margin-bottom: 20px;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .key {
+      min-height: 74px;
+      border: none;
+      border-radius: 14px;
+      background: #e7e8eb;
+      font-size: 30px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .key:active {
+      transform: scale(0.97);
+    }
+
+    .submit-key {
+      background: #222;
+      color: #fff;
+      font-size: 22px;
+    }
+
+    .feedback {
+      height: 46px;
+      text-align: center;
+      font-size: 34px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .correct {
+      color: #16833a;
+    }
+
+    .wrong {
+      color: #c62828;
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .summary-item {
+      padding: 14px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px;
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .question {
+        font-size: 46px;
+      }
+
+      .answer {
+        font-size: 38px;
+      }
+
+      .key {
+        min-height: 68px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <div id="loadingScreen" class="card loading">
+      読み込み中...
+    </div>
+
+    <div id="startScreen" class="card hidden">
+      <h1>計算トレーニング</h1>
+
+      <div id="studentField" class="field">
+        <label for="studentSelect">生徒</label>
+        <select id="studentSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="pinInput">4桁PIN</label>
+        <input
+          id="pinInput"
+          type="password"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="4"
+          autocomplete="off"
+          placeholder="••••"
+        >
+        <div id="authMessage" class="auth-message"></div>
+      </div>
+
+      <div class="field">
+        <label for="modeSelect">問題</label>
+        <select id="modeSelect">
+          <option value="add_1_1">1桁 ＋ 1桁</option>
+          <option value="add_2_1">2桁 ＋ 1桁</option>
+          <option value="add_2_2">2桁 ＋ 2桁</option>
+          <option value="multiplication">九九</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="questionCountSelect">問題数</label>
+        <select id="questionCountSelect">
+          <option value="10">10問</option>
+          <option value="20" selected>20問</option>
+          <option value="30">30問</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="timeLimitSelect">1問の制限時間</label>
+        <select id="timeLimitSelect">
+          <option value="5000">5秒</option>
+          <option value="7000">7秒</option>
+          <option value="10000" selected>10秒</option>
+          <option value="15000">15秒</option>
+        </select>
+      </div>
+
+      <button
+        id="startButton"
+        class="primary-btn"
+        onclick="startSession()"
+      >
+        スタート
+      </button>
+    </div>
+
+    <div id="gameScreen" class="card hidden">
+
+      <div class="top-row">
+        <div id="questionCounter"></div>
+        <button class="give-up-btn" onclick="giveUpSession()">ギブアップ</button>
+        <div id="timerText"></div>
+      </div>
+
+      <div class="progress-bar">
+        <div id="timerBar" class="progress-inner"></div>
+      </div>
+
+      <div id="questionText" class="question"></div>
+
+      <div id="feedback" class="feedback"></div>
+
+      <div id="answerDisplay" class="answer">&nbsp;</div>
+
+      <div class="keypad">
+
+        <button class="key" onclick="inputDigit('7')">7</button>
+        <button class="key" onclick="inputDigit('8')">8</button>
+        <button class="key" onclick="inputDigit('9')">9</button>
+
+        <button class="key" onclick="inputDigit('4')">4</button>
+        <button class="key" onclick="inputDigit('5')">5</button>
+        <button class="key" onclick="inputDigit('6')">6</button>
+
+        <button class="key" onclick="inputDigit('1')">1</button>
+        <button class="key" onclick="inputDigit('2')">2</button>
+        <button class="key" onclick="inputDigit('3')">3</button>
+
+        <button class="key" onclick="backspace()">⌫</button>
+        <button class="key" onclick="inputDigit('0')">0</button>
+        <button
+          class="key submit-key"
+          onclick="submitAnswer()"
+        >
+          決定
+        </button>
+
+      </div>
+    </div>
+
+    <div id="resultScreen" class="card hidden">
+      <h2>結果</h2>
+
+      <div id="summary" class="summary"></div>
+
+      <button
+        class="primary-btn"
+        onclick="returnToStart()"
+      >
+        もう一度
+      </button>
+    </div>
+
+  </div>
+
+<script src="./config.js"></script>
+<script>
+
+  let students = [];
+
+  let session = {
+    studentId: null,
+    mode: null,
+    totalQuestions: 20,
+    timeLimitMs: 10000,
+    currentIndex: 0,
+    results: [],
+    sessionToken: null
+  };
+
+  let currentQuestion = null;
+  let currentInput = '';
+  let questionStartedAt = 0;
+  let timerInterval = null;
+  let acceptingInput = false;
+
+  document.addEventListener('DOMContentLoaded', loadStudents);
+
+  function apiRequest(action, payload = {}) {
+    return new Promise((resolve, reject) => {
+      const apiUrl =
+        window.MATH_SPEED_CONFIG &&
+        String(window.MATH_SPEED_CONFIG.apiUrl || '').trim();
+
+      if (!apiUrl) {
+        reject(new Error('GAS API URL が未設定です。config.js を設定してください。'));
+        return;
+      }
+
+      const callbackName =
+        '__mathSpeedCb_' +
+        Date.now() +
+        '_' +
+        Math.random().toString(36).slice(2);
+
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('API通信がタイムアウトしました。'));
+      }, 15000);
+
+      function cleanup() {
+        clearTimeout(timer);
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[callbackName] = response => {
+        cleanup();
+
+        if (!response || response.success === false) {
+          reject(new Error(
+            response && (response.error || response.message)
+              ? (response.error || response.message)
+              : 'APIエラーが発生しました。'
+          ));
+          return;
+        }
+
+        resolve(response);
+      };
+
+      const params = new URLSearchParams({
+        action,
+        callback: callbackName,
+        payload: JSON.stringify(payload || {})
+      });
+
+      script.src = apiUrl + '?' + params.toString();
+      script.onerror = () => {
+        cleanup();
+        reject(new Error('APIへ接続できませんでした。'));
+      };
+
+      document.body.appendChild(script);
+    });
+  }
+
+  async function loadStudents() {
+    try {
+      const response = await apiRequest('getStudents');
+      students = response.students || [];
+
+      const select = document.getElementById('studentSelect');
+      select.innerHTML = '';
+
+      if (students.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = '生徒が登録されていません';
+        option.value = '';
+        select.appendChild(option);
+      } else {
+        students.forEach(student => {
+          const option = document.createElement('option');
+          option.value = student.studentId;
+          option.textContent =
+            student.name +
+            (student.grade ? `（${student.grade}年）` : '');
+          select.appendChild(option);
+        });
+
+        const singleStudentMode =
+          window.MATH_SPEED_CONFIG &&
+          window.MATH_SPEED_CONFIG.singleStudentMode === true;
+
+        if (singleStudentMode) {
+          select.value = students[0].studentId;
+          document.getElementById('studentField').classList.add('hidden');
+        }
+      }
+
+      showScreen('startScreen');
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function startSession() {
+
+    const studentId =
+      document.getElementById('studentSelect').value;
+
+    const pin =
+      document.getElementById('pinInput').value.trim();
+
+    const authMessage =
+      document.getElementById('authMessage');
+
+    authMessage.textContent = '';
+
+    if (!studentId) {
+      authMessage.textContent = '生徒を選択してください。';
+      return;
+    }
+
+    if (!/^\\d{4}$/.test(pin)) {
+      authMessage.textContent = '4桁のPINを入力してください。';
+      return;
+    }
+
+    const startButton =
+      document.getElementById('startButton');
+
+    startButton.disabled = true;
+    startButton.textContent = '確認中...';
+
+    try {
+      const response = await apiRequest('authenticateStudent', {
+        studentId,
+        pin
+      });
+
+      session = {
+        studentId,
+        mode: document.getElementById('modeSelect').value,
+        totalQuestions:
+          Number(document.getElementById('questionCountSelect').value),
+        timeLimitMs:
+          Number(document.getElementById('timeLimitSelect').value),
+        currentIndex: 0,
+        results: [],
+        sessionToken: response.token
+      };
+
+      document.getElementById('pinInput').value = '';
+
+      showScreen('gameScreen');
+      nextQuestion();
+    } catch (error) {
+      authMessage.textContent =
+        error.message || '認証に失敗しました。';
+    } finally {
+      startButton.disabled = false;
+      startButton.textContent = 'スタート';
+    }
+  }
+
+  function nextQuestion() {
+
+    clearTimer();
+
+    if (session.currentIndex >= session.totalQuestions) {
+      finishSession();
+      return;
+    }
+
+    currentQuestion = generateQuestion(session.mode);
+
+    currentInput = '';
+    acceptingInput = true;
+
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+
+    updateAnswerDisplay();
+
+    document.getElementById('questionCounter').textContent =
+      `${session.currentIndex + 1} / ${session.totalQuestions}`;
+
+    document.getElementById('questionText').textContent =
+      currentQuestion.text;
+
+    questionStartedAt = performance.now();
+
+    startTimer();
+  }
+
+  function generateQuestion(mode) {
+
+    let a;
+    let b;
+    let answer;
+    let text;
+    let category;
+    let level;
+
+    switch (mode) {
+
+      case 'add_1_1':
+
+        a = randomInt(1, 9);
+        b = randomInt(1, 9);
+
+        answer = a + b;
+        text = `${a} ＋ ${b}`;
+        category = 'addition';
+        level = '1digit_1digit';
+
+        break;
+
+      case 'add_2_1':
+
+        a = randomInt(10, 99);
+        b = randomInt(1, 9);
+
+        answer = a + b;
+        text = `${a} ＋ ${b}`;
+        category = 'addition';
+        level = '2digit_1digit';
+
+        break;
+
+      case 'add_2_2':
+
+        a = randomInt(10, 99);
+        b = randomInt(10, 99);
+
+        answer = a + b;
+        text = `${a} ＋ ${b}`;
+        category = 'addition';
+        level = '2digit_2digit';
+
+        break;
+
+      case 'multiplication':
+
+        a = randomInt(1, 9);
+        b = randomInt(1, 9);
+
+        answer = a * b;
+        text = `${a} × ${b}`;
+        category = 'multiplication';
+        level = 'kuku';
+
+        break;
+
+      default:
+
+        throw new Error('未対応の問題タイプです。');
+    }
+
+    return {
+      a,
+      b,
+      answer,
+      text,
+      category,
+      level
+    };
+  }
+
+  function randomInt(min, max) {
+    return Math.floor(
+      Math.random() * (max - min + 1)
+    ) + min;
+  }
+
+  function inputDigit(digit) {
+
+    if (!acceptingInput) return;
+
+    if (currentInput.length >= 6) return;
+
+    if (currentInput === '0') {
+      currentInput = digit;
+    } else {
+      currentInput += digit;
+    }
+
+    updateAnswerDisplay();
+  }
+
+  function backspace() {
+
+    if (!acceptingInput) return;
+
+    currentInput =
+      currentInput.slice(0, -1);
+
+    updateAnswerDisplay();
+  }
+
+  function updateAnswerDisplay() {
+
+    const display =
+      document.getElementById('answerDisplay');
+
+    display.textContent =
+      currentInput === ''
+        ? '\u00a0'
+        : currentInput;
+  }
+
+  function submitAnswer() {
+
+    if (!acceptingInput) return;
+    if (currentInput === '') return;
+
+    const elapsed =
+      Math.round(performance.now() - questionStartedAt);
+
+    const userAnswer =
+      Number(currentInput);
+
+    const isCorrect =
+      userAnswer === currentQuestion.answer;
+
+    recordResult({
+      userAnswer,
+      isCorrect,
+      responseMs: elapsed,
+      timedOut: false
+    });
+
+    showFeedback(isCorrect);
+  }
+
+  function timeOutQuestion() {
+
+    if (!acceptingInput) return;
+
+    recordResult({
+      userAnswer:
+        currentInput === ''
+          ? null
+          : Number(currentInput),
+      isCorrect: false,
+      responseMs: session.timeLimitMs,
+      timedOut: true
+    });
+
+    showFeedback(false, true);
+  }
+
+  function recordResult({
+    userAnswer,
+    isCorrect,
+    responseMs,
+    timedOut
+  }) {
+
+    acceptingInput = false;
+
+    clearTimer();
+
+    session.results.push({
+      category: currentQuestion.category,
+      level: currentQuestion.level,
+      question: currentQuestion.text,
+      correctAnswer: currentQuestion.answer,
+      userAnswer,
+      isCorrect,
+      responseMs,
+      timedOut
+    });
+
+    session.currentIndex += 1;
+  }
+
+  function showFeedback(isCorrect, timedOut = false) {
+
+    const feedback =
+      document.getElementById('feedback');
+
+    if (timedOut) {
+      feedback.textContent =
+        `時間切れ　答え：${currentQuestion.answer}`;
+      feedback.className = 'feedback wrong';
+    } else if (isCorrect) {
+      feedback.textContent = '○';
+      feedback.className = 'feedback correct';
+    } else {
+      feedback.textContent =
+        `×　答え：${currentQuestion.answer}`;
+      feedback.className = 'feedback wrong';
+    }
+
+    setTimeout(nextQuestion, 650);
+  }
+
+  function startTimer() {
+
+    const bar =
+      document.getElementById('timerBar');
+
+    const timerText =
+      document.getElementById('timerText');
+
+    bar.style.width = '100%';
+
+    timerInterval = setInterval(() => {
+
+      const elapsed =
+        performance.now() - questionStartedAt;
+
+      const remaining =
+        Math.max(
+          0,
+          session.timeLimitMs - elapsed
+        );
+
+      const ratio =
+        remaining / session.timeLimitMs;
+
+      bar.style.width =
+        `${ratio * 100}%`;
+
+      timerText.textContent =
+        `${(remaining / 1000).toFixed(1)}秒`;
+
+      if (remaining <= 0) {
+        clearTimer();
+        timeOutQuestion();
+      }
+
+    }, 50);
+  }
+
+  function clearTimer() {
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function giveUpSession() {
+    if (!confirm('ここでトレーニングを終了しますか？\nここまでの結果は保存されます。')) {
+      return;
+    }
+
+    acceptingInput = false;
+    clearTimer();
+    finishSession(true);
+  }
+
+  function finishSession(gaveUp = false) {
+
+    clearTimer();
+
+    const results = session.results;
+
+    const correctCount =
+      results.filter(r => r.isCorrect).length;
+
+    const timeoutCount =
+      results.filter(r => r.timedOut).length;
+
+    const accuracy =
+      results.length === 0
+        ? 0
+        : correctCount / results.length * 100;
+
+    const answeredResults =
+      results.filter(r => !r.timedOut);
+
+    const avgResponseMs =
+      answeredResults.length === 0
+        ? 0
+        : answeredResults.reduce(
+            (sum, r) => sum + r.responseMs,
+            0
+          ) / answeredResults.length;
+
+    const totalMinutes =
+      results.reduce(
+        (sum, r) => sum + r.responseMs,
+        0
+      ) / 60000;
+
+    const correctPerMinute =
+      totalMinutes > 0
+        ? correctCount / totalMinutes
+        : 0;
+
+    document.getElementById('summary').innerHTML = `
+      ${gaveUp ? '<div class="summary-item"><span>状態</span><strong>途中終了</strong></div>' : ''}
+      <div class="summary-item">
+        <span>正解</span>
+        <strong>${correctCount} / ${results.length}</strong>
+      </div>
+
+      <div class="summary-item">
+        <span>正答率</span>
+        <strong>${accuracy.toFixed(1)}%</strong>
+      </div>
+
+      <div class="summary-item">
+        <span>平均回答時間</span>
+        <strong>${(avgResponseMs / 1000).toFixed(2)}秒</strong>
+      </div>
+
+      <div class="summary-item">
+        <span>時間切れ</span>
+        <strong>${timeoutCount}問</strong>
+      </div>
+
+      <div class="summary-item">
+        <span>1分あたり正解数</span>
+        <strong>${correctPerMinute.toFixed(1)}問</strong>
+      </div>
+    `;
+
+    showScreen('resultScreen');
+
+    apiRequest('saveResults', {
+      studentId: session.studentId,
+      sessionToken: session.sessionToken,
+      results: session.results
+    })
+      .then(response => {
+        console.log('保存完了', response);
+      })
+      .catch(error => {
+        console.error('保存失敗', error);
+        alert(
+          '成績の保存に失敗しました。\\n' +
+          error.message
+        );
+      });
+  }
+
+  function returnToStart() {
+    session.sessionToken = null;
+    document.getElementById('pinInput').value = '';
+    document.getElementById('authMessage').textContent = '';
+    showScreen('startScreen');
+  }
+
+  function showScreen(screenId) {
+
+    [
+      'loadingScreen',
+      'startScreen',
+      'gameScreen',
+      'resultScreen'
+    ].forEach(id => {
+      document
+        .getElementById(id)
+        .classList.add('hidden');
+    });
+
+    document
+      .getElementById(screenId)
+      .classList.remove('hidden');
+  }
+
+  function showError(error) {
+
+    console.error(error);
+
+    document.getElementById('loadingScreen').innerHTML =
+      `
+        <strong>エラー</strong><br><br>
+        ${error.message || error}
+      `;
+  }
+
+</script>
+
+</body>
+</html>

@@ -589,16 +589,27 @@ function generateQuestion(genre) {
     }
   } else if (genre === 'two_digit_plus_minus_one') {
     op = Math.random() < 0.5 ? '+' : '-';
+
     if (op === '+') {
+      // 必ず一の位で繰り上がる
       a = rnd(10, 99);
-      b = rnd(1, 9);
+      const ones = a % 10;
+      const minB = Math.max(1, 10 - ones);
+      b = rnd(minB, 9);
       answer = a + b;
     } else {
-      a = rnd(11, 99);
-      b = rnd(1, Math.min(9, a - 1));
+      // 必ず一の位で繰り下がる
+      a = rnd(10, 99);
+      const ones = a % 10;
+      const minB = Math.max(1, ones + 1);
+      b = rnd(minB, 9);
       answer = a - b;
-      if (answer === 0) {
-        b = 1;
+
+      // 答えが0以下にならないよう安全策
+      if (answer <= 0) {
+        a = rnd(20, 99);
+        const safeOnes = a % 10;
+        b = rnd(Math.max(1, safeOnes + 1), 9);
         answer = a - b;
       }
     }

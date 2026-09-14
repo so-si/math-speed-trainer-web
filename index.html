@@ -231,7 +231,7 @@
         ・20問すべて正解し、<strong>60秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日5回</strong>に達すると、その日は挑戦できません。<br>
         ・ギブアップと60秒超過も失格1回として数えます。<br>
-        ・各ジャンルの「今日のベスト」と「暦日ごとの歴代ベストTOP10」を記録します。
+        ・各ジャンルの「今日のベスト」と「全ユーザー横断の暦日ベストTOP10」を記録します。
       </div>
 
       <div id="failStatus" class="fail-status"></div>
@@ -407,7 +407,7 @@ function renderGenreStats(genres) {
   box.innerHTML = genres.map(g => {
     const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
     const rows = (g.ranking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
     return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
@@ -418,9 +418,9 @@ function renderGenreStats(genres) {
         '</div>' +
       '</div>' +
       '<div class="best">今日のベスト：<strong>' + todayBest + '</strong></div>' +
-      '<h3>過去のベストタイムランキング（暦日）</h3>' +
+      '<h3>過去のベストタイムランキング（全ユーザー・暦日）</h3>' +
       (rows
-        ? '<table class="ranking"><thead><tr><th>順位</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        ? '<table class="ranking"><thead><tr><th>順位</th><th>ユーザー</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + rows + '</tbody></table>'
         : '<div class="best">まだ記録がありません。</div>') +
     '</div>';
   }).join('');

@@ -223,6 +223,9 @@
 
     <div id="dashboardArea" class="hidden">
       <div id="welcome" class="welcome"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="secondary" onclick="logoutUser()">ログアウト</button>
+      </div>
 
       <div class="rules">
         <strong>ルール</strong><br>
@@ -380,6 +383,43 @@ async function login() {
   }
 }
 
+async function logoutUser() {
+  try {
+    if (state.sessionToken) {
+      await apiRequest('logout', authPayload());
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+
+  resetToLogin();
+}
+
+function resetToLogin(message = '') {
+  clearInterval(state.timerId);
+  state.studentId = null;
+  state.sessionToken = null;
+  state.name = '';
+  state.dashboard = null;
+  state.genre = null;
+  state.questions = [];
+  state.index = 0;
+  state.input = '';
+  state.finished = false;
+  state.accepting = false;
+
+  document.getElementById('dashboardArea').classList.add('hidden');
+  document.getElementById('loginArea').classList.remove('hidden');
+  document.getElementById('loginMessage').textContent = message;
+  document.getElementById('pin').value = '';
+  show('home');
+}
+
+function isAuthError(error) {
+  const msg = String(error && error.message ? error.message : error || '');
+  return msg.includes('認証の有効期限') || msg.includes('認証情報');
+}
+
 async function refreshDashboard() {
   const d = await apiRequest('getDashboard', authPayload());
   state.dashboard = d;
@@ -430,10 +470,20 @@ async function startChallenge() {
   const genre = document.getElementById('genreSelect').value;
   if (!genre) return;
 
-  const response = await apiRequest('startChallenge', {
-    ...authPayload(),
-    genre
-  });
+  let response;
+  try {
+    response = await apiRequest('startChallenge', {
+      ...authPayload(),
+      genre
+    });
+  } catch (e) {
+    if (isAuthError(e)) {
+      resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+      return;
+    }
+    alert(e.message);
+    return;
+  }
 
   state.genre = genre;
   state.questions = generateSet(genre, response.questionCount || 20);
@@ -603,6 +653,10 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
 
     state.dashboard = response.dashboard || null;
   } catch (e) {
+    if (isAuthError(e)) {
+      resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+      return;
+    }
     alert('結果保存に失敗しました。\n' + e.message);
   }
 
@@ -633,6 +687,9 @@ async function backHome() {
     await refreshDashboard();
   } catch (e) {
     console.warn(e);
+    if (isAuthError(e)) {
+      resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+    }
   }
 }
 

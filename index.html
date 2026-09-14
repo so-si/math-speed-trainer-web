@@ -246,9 +246,9 @@
         <strong>ルール</strong><br>
         ・1セットは20問です。<br>
         ・<strong>1問でも間違えたら、その時点で失格</strong>です。<br>
-        ・20問すべて正解し、<strong>60秒以内</strong>に終えると次のジャンルが解放されます。<br>
+        ・20問すべて正解し、<strong>120秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日5回</strong>に達すると、その日は挑戦できません。<br>
-        ・ギブアップと60秒超過も失格1回として数えます。<br>
+        ・ギブアップと120秒超過も失格1回として数えます。<br>
         ・各ジャンルの「今日のベスト」と「全ユーザー横断の暦日ベストTOP10」を記録します。
       </div>
 
@@ -269,7 +269,7 @@
     <div class="top-row">
       <div id="counter"></div>
       <button class="secondary" onclick="giveUp()">ギブアップ</button>
-      <div id="timer" class="timer">60.0秒</div>
+      <div id="timer" class="timer">120.0秒</div>
     </div>
     <div class="progress"><div id="progressBar"></div></div>
     <div id="question" class="question"></div>
@@ -304,8 +304,9 @@ const APP_VERSION = '2026-09-15-fast-login';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
-  { id: 'two_digit_add_sub', name: '二桁の足し算・引き算' },
+  { id: 'two_digit_add', name: '二桁の足し算' },
   { id: 'multiplication', name: '九九' },
+  { id: 'two_digit_add_sub', name: '二桁の足し算・引き算' },
   { id: 'division_facts', name: '九九（割り算）' },
   { id: 'two_digit_times_one', name: '二桁 × 1桁' }
 ];
@@ -582,6 +583,8 @@ function generateQuestion(genre) {
     } else {
       a = rnd(2, 9); b = rnd(1, a - 1); answer = a - b;
     }
+  } else if (genre === 'two_digit_add') {
+    a = rnd(10, 99); b = rnd(10, 99); op = '+'; answer = a + b;
   } else if (genre === 'two_digit_add_sub') {
     op = Math.random() < 0.5 ? '+' : '-';
     if (op === '+') {
@@ -691,7 +694,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
   clearInterval(state.timerId);
 
   const elapsedMs = Math.round(performance.now() - state.startedAt);
-  const effectiveSuccess = success && elapsedMs <= 60000;
+  const effectiveSuccess = success && elapsedMs <= 120000;
   const reason = effectiveSuccess ? '' : (failReason || 'time_over');
 
   try {
@@ -730,7 +733,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
 
 function failReasonLabel(reason) {
   if (reason === 'wrong_answer') return '誤答';
-  if (reason === 'time_over') return '60秒超過';
+  if (reason === 'time_over') return '120秒超過';
   if (reason === 'give_up') return 'ギブアップ';
   return '失格';
 }

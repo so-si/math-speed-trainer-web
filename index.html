@@ -447,7 +447,7 @@ function renderGenreStats(genres) {
   box.innerHTML = genres.map(g => {
     const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
     const rows = (g.ranking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.dateLabel || r.date) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
     return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
@@ -522,16 +522,16 @@ function generateQuestion(genre) {
   if (genre === 'one_digit_add_sub') {
     op = Math.random() < 0.5 ? '+' : '-';
     if (op === '+') {
-      a = rnd(0, 9); b = rnd(0, 9); answer = a + b;
+      a = rnd(1, 9); b = rnd(1, 9); answer = a + b;
     } else {
-      a = rnd(0, 9); b = rnd(0, a); answer = a - b;
+      a = rnd(2, 9); b = rnd(1, a - 1); answer = a - b;
     }
   } else if (genre === 'two_digit_add_sub') {
     op = Math.random() < 0.5 ? '+' : '-';
     if (op === '+') {
       a = rnd(10, 99); b = rnd(10, 99); answer = a + b;
     } else {
-      a = rnd(10, 99); b = rnd(10, a); answer = a - b;
+      a = rnd(11, 99); b = rnd(10, a - 1); answer = a - b;
     }
   } else if (genre === 'multiplication') {
     a = rnd(1, 9); b = rnd(1, 9); op = '×'; answer = a * b;

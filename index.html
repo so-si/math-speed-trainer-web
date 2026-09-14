@@ -308,7 +308,8 @@ const GENRES = [
   { id: 'multiplication', name: '九九' },
   { id: 'division_facts', name: '九九（割り算）' },
   { id: 'two_digit_add_sub', name: '二桁の足し算・引き算' },
-  { id: 'two_digit_times_one', name: '二桁 × 1桁' }
+  { id: 'division_remainder', name: '余りありの割り算' },
+  { id: 'two_digit_times_one', name: '二桁 × 一桁' }
 ];
 
 const state = {
@@ -320,6 +321,9 @@ const state = {
   questions: [],
   index: 0,
   input: '',
+  quotientInput: '',
+  remainderInput: '',
+  answerStage: 'single',
   startedAt: 0,
   accepting: false,
   timerId: null,
@@ -598,6 +602,13 @@ function generateQuestion(genre) {
     const x = rnd(1, 9);
     const y = rnd(1, 9);
     a = x * y; b = x; op = '÷'; answer = y;
+  } else if (genre === 'division_remainder') {
+    b = rnd(2, 9);
+    const quotient = rnd(1, 9);
+    const remainder = rnd(1, b - 1);
+    a = b * quotient + remainder;
+    op = '÷';
+    answer = { quotient, remainder };
   } else if (genre === 'two_digit_times_one') {
     a = rnd(10, 99); b = rnd(1, 9); op = '×'; answer = a * b;
   } else {
@@ -614,6 +625,9 @@ function rnd(min, max) {
 function showQuestion() {
   const q = state.questions[state.index];
   state.input = '';
+  state.quotientInput = '';
+  state.remainderInput = '';
+  state.answerStage = state.genre === 'division_remainder' ? 'quotient' : 'single';
   state.accepting = true;
   document.getElementById('counter').textContent = (state.index + 1) + ' / 20';
   document.getElementById('question').textContent = q.text;
@@ -623,39 +637,94 @@ function showQuestion() {
 }
 
 function digit(d) {
-  if (!state.accepting || state.input.length >= 6) return;
-  state.input = state.input === '0' ? d : state.input + d;
+  if (!state.accepting) return;
+
+  if (state.genre === 'division_remainder') {
+    const key = state.answerStage === 'quotient' ? 'quotientInput' : 'remainderInput';
+    if (state[key].length >= 3) return;
+    state[key] = state[key] === '0' ? d : state[key] + d;
+  } else {
+    if (state.input.length >= 6) return;
+    state.input = state.input === '0' ? d : state.input + d;
+  }
+
   updateAnswer();
 }
 
 function backspace() {
   if (!state.accepting) return;
-  state.input = state.input.slice(0, -1);
+
+  if (state.genre === 'division_remainder') {
+    const key = state.answerStage === 'quotient' ? 'quotientInput' : 'remainderInput';
+    state[key] = state[key].slice(0, -1);
+  } else {
+    state.input = state.input.slice(0, -1);
+  }
+
   updateAnswer();
 }
 
 function updateAnswer() {
-  document.getElementById('answer').textContent = state.input || '\u00a0';
+  const el = document.getElementById('answer');
+
+  if (state.genre === 'division_remainder') {
+    const q = state.quotientInput || '＿';
+    const r = state.remainderInput || '＿';
+    el.textContent = '商 ' + q + '　あまり ' + r;
+    return;
+  }
+
+  el.textContent = state.input || '\u00a0';
 }
 
 function submitAnswer() {
-  if (!state.accepting || state.input === '' || state.finished) return;
+  if (!state.accepting || state.finished) return;
 
   const q = state.questions[state.index];
-  const value = Number(state.input);
-  state.accepting = false;
 
-  if (value !== q.answer) {
-    document.getElementById('feedback').textContent = '失格';
-    document.getElementById('feedback').className = 'feedback ng';
-    finish(false, 'wrong_answer', q, value);
-    return;
+  if (state.genre === 'division_remainder') {
+    if (state.answerStage === 'quotient') {
+      if (state.quotientInput === '') return;
+      state.answerStage = 'remainder';
+      updateAnswer();
+      return;
+    }
+
+    if (state.remainderInput === '') return;
+
+    const quotient = Number(state.quotientInput);
+    const remainder = Number(state.remainderInput);
+    state.accepting = false;
+
+    if (
+      quotient !== q.answer.quotient ||
+      remainder !== q.answer.remainder
+    ) {
+      document.getElementById('feedback').textContent = '失格';
+      document.getElementById('feedback').className = 'feedback ng';
+      finish(false, 'wrong_answer', q, quotient + ' あまり ' + remainder);
+      return;
+    }
+  } else {
+    if (state.input === '') return;
+
+    const value = Number(state.input);
+    state.accepting = false;
+
+    if (value !== q.answer) {
+      document.getElementById('feedback').textContent = '失格';
+      document.getElementById('feedback').className = 'feedback ng';
+      finish(false, 'wrong_answer', q, value);
+      return;
+    }
   }
 
   state.index++;
 
   if (state.index >= 20) {
-    finish(true, '', q, value);
+    finish(true, '', q, state.genre === 'division_remainder'
+      ? state.quotientInput + ' あまり ' + state.remainderInput
+      : Number(state.input));
     return;
   }
 
@@ -707,7 +776,11 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
       answeredCount: effectiveSuccess ? 20 : state.index,
       failedQuestion: failedQuestion ? failedQuestion.text : '',
       userAnswer: userAnswer,
-      correctAnswer: failedQuestion ? failedQuestion.answer : null
+      correctAnswer: failedQuestion
+        ? (state.genre === 'division_remainder'
+            ? failedQuestion.answer.quotient + ' あまり ' + failedQuestion.answer.remainder
+            : failedQuestion.answer)
+        : null
     });
 
     state.dashboard = response.dashboard || null;

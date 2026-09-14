@@ -304,7 +304,7 @@ const APP_VERSION = '2026-09-15-fast-login';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
-  { id: 'two_digit_add', name: '二桁の足し算' },
+  { id: 'two_digit_plus_minus_one', name: '二桁 ± 一桁' },
   { id: 'multiplication', name: '九九' },
   { id: 'division_facts', name: '九九（割り算）' },
   { id: 'two_digit_add_sub', name: '二桁の足し算・引き算' },
@@ -587,8 +587,21 @@ function generateQuestion(genre) {
     } else {
       a = rnd(2, 9); b = rnd(1, a - 1); answer = a - b;
     }
-  } else if (genre === 'two_digit_add') {
-    a = rnd(10, 99); b = rnd(10, 99); op = '+'; answer = a + b;
+  } else if (genre === 'two_digit_plus_minus_one') {
+    op = Math.random() < 0.5 ? '+' : '-';
+    if (op === '+') {
+      a = rnd(10, 99);
+      b = rnd(1, 9);
+      answer = a + b;
+    } else {
+      a = rnd(11, 99);
+      b = rnd(1, Math.min(9, a - 1));
+      answer = a - b;
+      if (answer === 0) {
+        b = 1;
+        answer = a - b;
+      }
+    }
   } else if (genre === 'two_digit_add_sub') {
     op = Math.random() < 0.5 ? '+' : '-';
     if (op === '+') {

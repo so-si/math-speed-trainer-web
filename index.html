@@ -217,6 +217,7 @@
         <label for="pin">4桁PIN</label>
         <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
         <div id="loginMessage" class="message"></div>
+        <div id="diagnostic" style="margin-top:8px;text-align:center;font-size:12px;color:#888;"></div>
       </div>
       <button id="loginBtn" class="primary" onclick="login()">ログイン</button>
     </div>
@@ -285,6 +286,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbwtnI1WanUg9X4Q8aJRv1M5qAWxlrB2WMzKl8I_Bt-k2urTa2y5zIChPY0azT2lOtI/exec';
+const APP_VERSION = '2026-09-15-0408';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -309,7 +311,13 @@ const state = {
   finished: false
 };
 
-document.addEventListener('DOMContentLoaded', () => show('home'));
+document.addEventListener('DOMContentLoaded', () => {
+  show('home');
+  const d = document.getElementById('diagnostic');
+  if (d) {
+    d.textContent = 'version ' + APP_VERSION + ' / ' + (navigator.onLine ? 'online' : 'offline');
+  }
+});
 
 function apiRequest(action, payload = {}, attempt = 0) {
   return new Promise((resolve, reject) => {
@@ -358,7 +366,7 @@ function apiRequest(action, payload = {}, attempt = 0) {
           apiRequest(action, payload, attempt + 1).then(resolve).catch(reject);
         }, 700);
       } else {
-        reject(new Error('GAS APIへ接続できませんでした。'));
+        reject(new Error('GAS APIへ接続できませんでした（端末またはブラウザ側で外部通信が遮断された可能性があります）'));
       }
     };
 

@@ -313,7 +313,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-4';
+const APP_VERSION = '2026-09-15-ultralight-5';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -324,6 +324,13 @@ const GENRES = [
   { id: 'division_remainder', name: '余りありの割り算' },
   { id: 'two_digit_times_one', name: '二桁 × 一桁' }
 ];
+
+const LOCAL_USERS = {
+  '0000': { studentId: 'S001', name: 'でんせつ' },
+  '0422': { studentId: '1', name: 'れお' },
+  '0702': { studentId: '2', name: 'よしこ' },
+  '0321': { studentId: '3', name: 'そうし' }
+};
 
 const state = {
   studentId: null,
@@ -394,7 +401,7 @@ function apiRequest(action, payload = {}) {
   });
 }
 
-async function login() {
+function login() {
   const pin = document.getElementById('pin').value.trim();
   const message = document.getElementById('loginMessage');
   message.textContent = '';
@@ -404,51 +411,29 @@ async function login() {
     return;
   }
 
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.textContent = '確認中...';
-
-  try {
-    const response = await apiRequest('authenticateByPin', { pin });
-    state.studentId = response.studentId;
-    state.sessionToken = response.token;
-    state.name = response.name || '';
-    try {
-      localStorage.setItem('mathSpeedSession', JSON.stringify({
-        studentId: state.studentId,
-        sessionToken: state.sessionToken,
-        name: state.name,
-        savedAt: Date.now()
-      }));
-    } catch (e) {}
-    document.getElementById('pin').value = '';
-
-    document.getElementById('loginArea').classList.add('hidden');
-    document.getElementById('dashboardArea').classList.remove('hidden');
-
-    const cachedDashboard = loadCachedDashboard(state.studentId);
-    if (cachedDashboard) {
-      applyDashboard(cachedDashboard);
-    } else {
-      document.getElementById('welcome').textContent =
-        state.name ? state.name + ' さん' : '';
-      document.getElementById('failStatus').textContent = '成績を更新中...';
-      document.getElementById('genreStats').innerHTML =
-        '<div class="best">成績を更新中...</div>';
-    }
-
-    refreshDashboard().catch(e => {
-      console.warn(e);
-      if (isAuthError(e)) {
-        resetToLogin('セッションが切れました。もう一度PINを入力してください。');
-      }
-    });
-  } catch (e) {
-    message.textContent = e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'ログイン';
+  const user = LOCAL_USERS[pin];
+  if (!user) {
+    message.textContent = 'PINが違います。';
+    return;
   }
+
+  state.studentId = user.studentId;
+  state.sessionToken = null;
+  state.name = user.name;
+
+  document.getElementById('pin').value = '';
+  document.getElementById('loginArea').classList.add('hidden');
+  document.getElementById('dashboardArea').classList.remove('hidden');
+
+  const cachedDashboard =
+    loadCachedDashboard(state.studentId) || makeDefaultDashboard();
+
+  applyDashboard(cachedDashboard);
+
+  // 最新化は完全に裏で行い、ログイン操作を待たせない。
+  setTimeout(() => {
+    refreshDashboard().catch(e => console.warn(e));
+  }, 50);
 }
 
 function logoutUser() {
@@ -479,6 +464,25 @@ function resetToLogin(message = '') {
 function isAuthError(error) {
   const msg = String(error && error.message ? error.message : error || '');
   return msg.includes('認証の有効期限') || msg.includes('認証情報');
+}
+
+function makeDefaultDashboard() {
+  return {
+    todayFails: 0,
+    failLimit: 5,
+    lockedForToday: false,
+    questionCount: 20,
+    clearTimeMs: 120000,
+    genres: GENRES.map((g, i) => ({
+      id: g.id,
+      name: g.name,
+      unlocked: i === 0,
+      cleared: false,
+      todayBestMs: null,
+      ranking: [],
+      personalRanking: []
+    }))
+  };
 }
 
 function dashboardCacheKey(studentId) {
@@ -958,8 +962,7 @@ async function backHome() {
 
 function authPayload() {
   return {
-    studentId: state.studentId,
-    sessionToken: state.sessionToken
+    studentId: state.studentId
   };
 }
 

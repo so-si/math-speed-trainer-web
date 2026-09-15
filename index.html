@@ -355,7 +355,7 @@
         ・20問すべて正解し、<strong>120秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日5回</strong>に達すると、その日は挑戦できません。<br>
         ・120秒超過は失格1回として数えます。<br>
-        ・ギブアップは挑戦終了になりますが、1日5回の失格カウントには含めません。<br>
+        ・ギブアップはその場で挑戦終了になります。1日5回の失格カウントには含めません。<br>
         ・各ジャンルの「今日のベスト」と「全ユーザー横断の暦日ベストTOP10」を記録します。
       </div>
 
@@ -400,7 +400,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-10';
+const APP_VERSION = '2026-09-15-ultralight-11';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -563,6 +563,7 @@ function makeDefaultDashboard() {
   return {
     provisional: true,
     todayFails: 0,
+    todayAttempts: 0,
     failLimit: 5,
     lockedForToday: false,
     questionCount: 20,
@@ -736,7 +737,7 @@ function renderGenreStats(genres, lockedForToday = false) {
       '</div>' +
       '<div class="best">今日のベスト：<strong>' + todayBest + '</strong></div>' +
 
-      '<h3>${escapeHtml(state.name || "")}の記録</h3>' +
+      '<h3>' + escapeHtml(state.name || '') + 'の記録</h3>' +
       (personalRows
         ? '<div class="ranking-wrap"><table class="ranking personal-ranking"><thead><tr><th>順位</th><th>タイム</th><th>日付</th></tr></thead><tbody>' + personalRows + '</tbody></table></div>'
         : '<div class="best">まだ記録がありません。</div>') +
@@ -754,6 +755,12 @@ function startChallenge(genre) {
 
   const g = (state.dashboard.genres || []).find(x => x.id === genre);
   if (!g || !g.unlocked || state.dashboard.lockedForToday) return;
+
+  const attemptNo = Number(state.dashboard.todayAttempts || 0) + 1;
+  const ok = confirm(
+    g.name + 'コースを開始しますか？\n（本日' + attemptNo + '回目）'
+  );
+  if (!ok) return;
 
   state.genre = genre;
   state.questions = generateSet(
@@ -1007,10 +1014,9 @@ function startMasterTimer(limitMs) {
 }
 
 function giveUp() {
-  if (state.finished) return;
-  if (!confirm('ギブアップしますか？\n失格1回として記録されます。')) return;
-  const q = state.questions[state.index] || null;
-  finish(false, 'give_up', q, state.input === '' ? null : Number(state.input));
+  if (!state.accepting || state.finished) return;
+  state.accepting = false;
+  finish(false, 'give_up', null, null);
 }
 
 function getPersonalBestComparison(genreId, elapsedMs) {
@@ -1150,6 +1156,9 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
         : null
     });
 
+    if (state.dashboard) {
+      state.dashboard.todayAttempts = Number(state.dashboard.todayAttempts || 0) + 1;
+    }
     refreshDashboard().catch(e => console.warn(e));
   } catch (e) {
     console.warn('結果保存に失敗しました。', e);

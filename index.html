@@ -314,7 +314,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-1415';
+const APP_VERSION = '2026-09-15-ultralight-1';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -416,23 +416,22 @@ async function login() {
     state.name = response.name || '';
     document.getElementById('pin').value = '';
 
-    document.getElementById('welcome').textContent =
-      state.name ? state.name + ' さん' : '';
-    document.getElementById('failStatus').textContent = '成績を読み込み中...';
-    document.getElementById('genreStats').innerHTML =
-      '<div class="best">ランキングを読み込み中...</div>';
-document.getElementById('loginArea').classList.add('hidden');
+    document.getElementById('loginArea').classList.add('hidden');
     document.getElementById('dashboardArea').classList.remove('hidden');
 
-    refreshDashboard().catch(e => {
-      console.warn(e);
-      if (isAuthError(e)) {
-        resetToLogin('セッションが切れました。もう一度PINを入力してください。');
-      } else {
-        document.getElementById('failStatus').textContent =
-          '成績の読み込みに失敗しました。';
-      }
-    });
+    if (response.dashboard) {
+      applyDashboard(response.dashboard);
+    } else {
+      refreshDashboard().catch(e => {
+        console.warn(e);
+        if (isAuthError(e)) {
+          resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+        } else {
+          document.getElementById('failStatus').textContent =
+            '成績の読み込みに失敗しました。';
+        }
+      });
+    }
   } catch (e) {
     message.textContent = e.message;
   } finally {
@@ -441,15 +440,7 @@ document.getElementById('loginArea').classList.add('hidden');
   }
 }
 
-async function logoutUser() {
-  try {
-    if (state.sessionToken) {
-      await apiRequest('logout', authPayload());
-    }
-  } catch (e) {
-    console.warn(e);
-  }
-
+function logoutUser() {
   resetToLogin();
 }
 
@@ -478,14 +469,18 @@ function isAuthError(error) {
   return msg.includes('認証の有効期限') || msg.includes('認証情報');
 }
 
-async function refreshDashboard() {
-  const d = await apiRequest('getDashboard', authPayload());
+function applyDashboard(d) {
   state.dashboard = d;
   document.getElementById('welcome').textContent = state.name ? state.name + ' さん' : '';
   const failStatus = document.getElementById('failStatus');
   failStatus.textContent = '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
   failStatus.classList.toggle('danger', d.todayFails >= d.failLimit);
-renderGenreStats(d.genres, d.lockedForToday);
+  renderGenreStats(d.genres, d.lockedForToday);
+}
+
+async function refreshDashboard() {
+  const d = await apiRequest('getDashboard', authPayload());
+  applyDashboard(d);
 }
 
 function renderGenreStats(genres, lockedForToday = false) {
@@ -529,26 +524,17 @@ function renderGenreStats(genres, lockedForToday = false) {
   }).join('');
 }
 
-async function startChallenge(genre) {
-  if (!genre) return;
+function startChallenge(genre) {
+  if (!genre || !state.dashboard) return;
 
-  let response;
-  try {
-    response = await apiRequest('startChallenge', {
-      ...authPayload(),
-      genre
-    });
-  } catch (e) {
-    if (isAuthError(e)) {
-      resetToLogin('セッションが切れました。もう一度PINを入力してください。');
-      return;
-    }
-    alert(e.message);
-    return;
-  }
+  const g = (state.dashboard.genres || []).find(x => x.id === genre);
+  if (!g || !g.unlocked || state.dashboard.lockedForToday) return;
 
   state.genre = genre;
-  state.questions = generateSet(genre, response.questionCount || 20);
+  state.questions = generateSet(
+    genre,
+    state.dashboard.questionCount || 20
+  );
   state.index = 0;
   state.input = '';
   state.startedAt = performance.now();
@@ -557,7 +543,7 @@ async function startChallenge(genre) {
 
   show('game');
   showQuestion();
-  startMasterTimer(response.clearTimeMs || 60000);
+  startMasterTimer(state.dashboard.clearTimeMs || 120000);
 }
 
 function generateSet(genre, count) {

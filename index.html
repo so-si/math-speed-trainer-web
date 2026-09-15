@@ -313,7 +313,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-5';
+const APP_VERSION = '2026-09-15-ultralight-6';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -430,10 +430,16 @@ function login() {
 
   applyDashboard(cachedDashboard);
 
-  // 最新化は完全に裏で行い、ログイン操作を待たせない。
+  // ログイン表示は即時。過去成績は新旧どちらのGASでも裏で復元する。
   setTimeout(() => {
-    refreshDashboard().catch(e => console.warn(e));
-  }, 50);
+    syncDashboardCompat(pin).catch(e => {
+      console.warn(e);
+      const failStatus = document.getElementById('failStatus');
+      if (failStatus && !loadCachedDashboard(state.studentId)) {
+        failStatus.textContent = '過去成績の取得に失敗しました。';
+      }
+    });
+  }, 20);
 }
 
 function logoutUser() {
@@ -468,6 +474,7 @@ function isAuthError(error) {
 
 function makeDefaultDashboard() {
   return {
+    provisional: true,
     todayFails: 0,
     failLimit: 5,
     lockedForToday: false,
@@ -512,13 +519,42 @@ function applyDashboard(d) {
   if (state.studentId) saveCachedDashboard(state.studentId, d);
   document.getElementById('welcome').textContent = state.name ? state.name + ' さん' : '';
   const failStatus = document.getElementById('failStatus');
-  failStatus.textContent = '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
+  failStatus.textContent = d.provisional
+    ? '過去成績を読み込み中...'
+    : '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
   failStatus.classList.toggle('danger', d.todayFails >= d.failLimit);
   renderGenreStats(d.genres, d.lockedForToday);
 }
 
 async function refreshDashboard() {
   const d = await apiRequest('getDashboard', authPayload());
+  applyDashboard(d);
+}
+
+async function syncDashboardCompat(pin) {
+  try {
+    await refreshDashboard();
+    return;
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e || '');
+    const authNeeded =
+      msg.includes('認証') ||
+      msg.includes('有効期限') ||
+      msg.includes('session') ||
+      msg.includes('token');
+
+    if (!authNeeded || !pin) throw e;
+  }
+
+  const auth = await apiRequest('authenticateByPin', { pin });
+  state.studentId = auth.studentId;
+  state.sessionToken = auth.token || null;
+  state.name = auth.name || state.name;
+
+  const d = auth.dashboard
+    ? auth.dashboard
+    : await apiRequest('getDashboard', authPayload());
+
   applyDashboard(d);
 }
 

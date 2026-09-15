@@ -91,6 +91,16 @@
       background: #151515;
     }
     .genre-card.locked { opacity: .48; }
+    .genre-card.tappable {
+      cursor: pointer;
+      transition: transform .08s ease, border-color .12s ease, background .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .genre-card.tappable:active {
+      transform: scale(.99);
+      background: #1b1b1b;
+      border-color: #555;
+    }
     .genre-head {
       display: flex;
       align-items: center;
@@ -254,14 +264,7 @@
 
       <div id="failStatus" class="fail-status"></div>
 
-      <div class="field">
-        <label for="genreSelect">ジャンル</label>
-        <select id="genreSelect"></select>
-      </div>
-
       <div id="genreStats"></div>
-
-      <button id="startBtn" class="primary" onclick="startChallenge()">スタート</button>
     </div>
   </div>
 
@@ -505,7 +508,9 @@ function renderGenreStats(genres) {
       escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
-    return '<div class="genre-card ' + (g.unlocked ? '' : 'locked') + '">' +
+    return '<div class="genre-card ' + (g.unlocked ? 'tappable' : 'locked') + '"' +
+      (g.unlocked ? ' role="button" tabindex="0" onclick="startChallenge(\'' + escapeHtml(g.id) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){startChallenge(\'' + escapeHtml(g.id) + '\')}"' : '') +
+      '>' +
       '<div class="genre-head">' +
         '<div class="genre-name">' + escapeHtml(g.name) + '</div>' +
         '<div class="badge ' + (g.cleared ? 'clear' : (g.unlocked ? '' : 'lock')) + '">' +
@@ -527,8 +532,7 @@ function renderGenreStats(genres) {
   }).join('');
 }
 
-async function startChallenge() {
-  const genre = document.getElementById('genreSelect').value;
+async function startChallenge(genre) {
   if (!genre) return;
 
   let response;

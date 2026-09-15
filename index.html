@@ -409,7 +409,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-12';
+const APP_VERSION = '2026-09-15-ultralight-13';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -528,6 +528,7 @@ function login() {
 
   // ログイン表示は即時。過去成績は新旧どちらのGASでも裏で復元する。
   setTimeout(() => {
+    flushPendingAttempts().catch(e => console.warn(e));
     syncDashboardCompat(pin).catch(e => {
       console.warn(e);
       const failStatus = document.getElementById('failStatus');
@@ -571,6 +572,7 @@ function isAuthError(error) {
 function makeDefaultDashboard() {
   return {
     provisional: true,
+    today: formatTodayKeyClient(),
     todayFails: 0,
     todayAttempts: 0,
     failLimit: 5,
@@ -1128,6 +1130,85 @@ function renderFinishComparison(elapsedMs, effectiveSuccess) {
   '</div>';
 }
 
+function applyLocalAttemptResult(genreId, success, elapsedMs, failReason) {
+  if (!state.dashboard) return;
+
+  const genres = state.dashboard.genres || [];
+  const idx = genres.findIndex(g => g.id === genreId);
+  if (idx < 0) return;
+
+  state.dashboard.todayAttempts = Number(state.dashboard.todayAttempts || 0) + 1;
+
+  if (!success && failReason !== 'give_up') {
+    state.dashboard.todayFails = Number(state.dashboard.todayFails || 0) + 1;
+    state.dashboard.lockedForToday =
+      state.dashboard.todayFails >= Number(state.dashboard.failLimit || 5);
+  }
+
+  if (success) {
+    const g = genres[idx];
+    g.cleared = true;
+    g.todayBestMs = g.todayBestMs == null
+      ? elapsedMs
+      : Math.min(Number(g.todayBestMs), elapsedMs);
+
+    const today = state.dashboard.today || formatTodayKeyClient();
+    const personal = Array.isArray(g.personalRanking) ? g.personalRanking.slice() : [];
+    const found = personal.find(r => String(r.date) === String(today));
+    if (found) {
+      found.bestMs = Math.min(Number(found.bestMs || elapsedMs), elapsedMs);
+    } else {
+      personal.push({ date: today, bestMs: elapsedMs });
+    }
+    personal.sort((a, b) => Number(a.bestMs) - Number(b.bestMs));
+    g.personalRanking = personal.slice(0, 5);
+
+    if (idx + 1 < genres.length) {
+      genres[idx + 1].unlocked = true;
+    }
+  }
+
+  saveCachedDashboard(state.studentId, state.dashboard);
+}
+
+function formatTodayKeyClient() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+function queuePendingAttempt(payload) {
+  try {
+    const key = 'mathSpeedPendingAttempts';
+    const list = JSON.parse(localStorage.getItem(key) || '[]');
+    list.push(payload);
+    localStorage.setItem(key, JSON.stringify(list.slice(-20)));
+  } catch (e) {}
+}
+
+async function flushPendingAttempts() {
+  const key = 'mathSpeedPendingAttempts';
+  let list = [];
+  try {
+    list = JSON.parse(localStorage.getItem(key) || '[]');
+  } catch (e) {}
+  if (!Array.isArray(list) || !list.length) return;
+
+  const remain = [];
+  for (const payload of list) {
+    try {
+      await apiRequest('saveAttempt', payload);
+    } catch (e) {
+      remain.push(payload);
+    }
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify(remain));
+  } catch (e) {}
+}
+
 async function finish(success, failReason, failedQuestion, userAnswer) {
   if (state.finished) return;
   state.finished = true;
@@ -1162,29 +1243,35 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
 
   show('result');
 
-  try {
-    await apiRequest('saveAttempt', {
-      ...authPayload(),
-      genre: state.genre,
-      success: effectiveSuccess,
-      elapsedMs,
-      failReason: reason,
-      answeredCount: effectiveSuccess ? 20 : state.index,
-      failedQuestion: failedQuestion ? failedQuestion.text : '',
-      userAnswer: userAnswer,
-      correctAnswer: failedQuestion
-        ? (state.genre === 'division_remainder'
-            ? failedQuestion.answer.quotient + ' あまり ' + failedQuestion.answer.remainder
-            : failedQuestion.answer)
-        : null
-    });
+  const savePayload = {
+    ...authPayload(),
+    genre: state.genre,
+    success: effectiveSuccess,
+    elapsedMs,
+    failReason: reason,
+    answeredCount: effectiveSuccess ? 20 : state.index,
+    failedQuestion: failedQuestion ? failedQuestion.text : '',
+    userAnswer: userAnswer,
+    correctAnswer: failedQuestion
+      ? (state.genre === 'division_remainder'
+          ? failedQuestion.answer.quotient + ' あまり ' + failedQuestion.answer.remainder
+          : failedQuestion.answer)
+      : null
+  };
 
-    if (state.dashboard) {
-      state.dashboard.todayAttempts = Number(state.dashboard.todayAttempts || 0) + 1;
-    }
+  applyLocalAttemptResult(
+    state.genre,
+    effectiveSuccess,
+    elapsedMs,
+    reason
+  );
+
+  try {
+    await apiRequest('saveAttempt', savePayload);
     refreshDashboard().catch(e => console.warn(e));
   } catch (e) {
-    console.warn('結果保存に失敗しました。', e);
+    console.warn('結果保存を再送待ちにしました。', e);
+    queuePendingAttempt(savePayload);
   }
 }
 
@@ -1196,6 +1283,7 @@ function failReasonLabel(reason) {
 }
 
 async function backHome() {
+  flushPendingAttempts().catch(e => console.warn(e));
   show('home');
   document.getElementById('loginArea').classList.add('hidden');
   document.getElementById('dashboardArea').classList.remove('hidden');

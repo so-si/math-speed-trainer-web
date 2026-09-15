@@ -313,7 +313,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-3';
+const APP_VERSION = '2026-09-15-ultralight-4';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -413,24 +413,36 @@ async function login() {
     state.studentId = response.studentId;
     state.sessionToken = response.token;
     state.name = response.name || '';
+    try {
+      localStorage.setItem('mathSpeedSession', JSON.stringify({
+        studentId: state.studentId,
+        sessionToken: state.sessionToken,
+        name: state.name,
+        savedAt: Date.now()
+      }));
+    } catch (e) {}
     document.getElementById('pin').value = '';
 
     document.getElementById('loginArea').classList.add('hidden');
     document.getElementById('dashboardArea').classList.remove('hidden');
 
-    if (response.dashboard) {
-      applyDashboard(response.dashboard);
+    const cachedDashboard = loadCachedDashboard(state.studentId);
+    if (cachedDashboard) {
+      applyDashboard(cachedDashboard);
     } else {
-      refreshDashboard().catch(e => {
-        console.warn(e);
-        if (isAuthError(e)) {
-          resetToLogin('セッションが切れました。もう一度PINを入力してください。');
-        } else {
-          document.getElementById('failStatus').textContent =
-            '成績の読み込みに失敗しました。';
-        }
-      });
+      document.getElementById('welcome').textContent =
+        state.name ? state.name + ' さん' : '';
+      document.getElementById('failStatus').textContent = '成績を更新中...';
+      document.getElementById('genreStats').innerHTML =
+        '<div class="best">成績を更新中...</div>';
     }
+
+    refreshDashboard().catch(e => {
+      console.warn(e);
+      if (isAuthError(e)) {
+        resetToLogin('セッションが切れました。もう一度PINを入力してください。');
+      }
+    });
   } catch (e) {
     message.textContent = e.message;
   } finally {
@@ -440,6 +452,7 @@ async function login() {
 }
 
 function logoutUser() {
+  try { localStorage.removeItem('mathSpeedSession'); } catch (e) {}
   resetToLogin();
 }
 
@@ -468,8 +481,31 @@ function isAuthError(error) {
   return msg.includes('認証の有効期限') || msg.includes('認証情報');
 }
 
+function dashboardCacheKey(studentId) {
+  return 'mathSpeedDashboard:' + String(studentId || '');
+}
+
+function loadCachedDashboard(studentId) {
+  try {
+    const raw = localStorage.getItem(dashboardCacheKey(studentId));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveCachedDashboard(studentId, dashboard) {
+  try {
+    localStorage.setItem(
+      dashboardCacheKey(studentId),
+      JSON.stringify(dashboard)
+    );
+  } catch (e) {}
+}
+
 function applyDashboard(d) {
   state.dashboard = d;
+  if (state.studentId) saveCachedDashboard(state.studentId, d);
   document.getElementById('welcome').textContent = state.name ? state.name + ' さん' : '';
   const failStatus = document.getElementById('failStatus');
   failStatus.textContent = '今日の失格：' + d.todayFails + ' / ' + d.failLimit;

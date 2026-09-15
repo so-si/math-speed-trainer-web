@@ -410,9 +410,7 @@ async function login() {
     document.getElementById('failStatus').textContent = '成績を読み込み中...';
     document.getElementById('genreStats').innerHTML =
       '<div class="best">ランキングを読み込み中...</div>';
-    document.getElementById('startBtn').disabled = true;
-
-    document.getElementById('loginArea').classList.add('hidden');
+document.getElementById('loginArea').classList.add('hidden');
     document.getElementById('dashboardArea').classList.remove('hidden');
 
     refreshDashboard().catch(e => {
@@ -476,23 +474,10 @@ async function refreshDashboard() {
   const failStatus = document.getElementById('failStatus');
   failStatus.textContent = '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
   failStatus.classList.toggle('danger', d.todayFails >= d.failLimit);
-
-  const select = document.getElementById('genreSelect');
-  select.innerHTML = '';
-  d.genres.forEach(g => {
-    const option = document.createElement('option');
-    option.value = g.id;
-    option.textContent = g.unlocked ? g.name : '🔒 ' + g.name;
-    option.disabled = !g.unlocked;
-    select.appendChild(option);
-  });
-
-  select.onchange = () => renderGenreStats(d.genres);
-  renderGenreStats(d.genres);
-  document.getElementById('startBtn').disabled = d.lockedForToday;
+renderGenreStats(d.genres, d.lockedForToday);
 }
 
-function renderGenreStats(genres) {
+function renderGenreStats(genres, lockedForToday = false) {
   const box = document.getElementById('genreStats');
 
   box.innerHTML = genres.map(g => {
@@ -508,8 +493,9 @@ function renderGenreStats(genres) {
       escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
     ).join('');
 
-    return '<div class="genre-card ' + (g.unlocked ? 'tappable' : 'locked') + '"' +
-      (g.unlocked ? ' role="button" tabindex="0" onclick="startChallenge(\'' + escapeHtml(g.id) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){startChallenge(\'' + escapeHtml(g.id) + '\')}"' : '') +
+    const canStart = g.unlocked && !lockedForToday;
+    return '<div class="genre-card ' + (canStart ? 'tappable' : 'locked') + '"' +
+      (canStart ? ' role="button" tabindex="0" onclick="startChallenge(\'' + escapeHtml(g.id) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){startChallenge(\'' + escapeHtml(g.id) + '\')}"' : '') +
       '>' +
       '<div class="genre-head">' +
         '<div class="genre-name">' + escapeHtml(g.name) + '</div>' +

@@ -126,29 +126,27 @@
     }
     .ranking-wrap {
       width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
     }
     .ranking {
       width: 100%;
-      min-width: 520px;
       border-collapse: collapse;
       margin-top: 8px;
-      font-size: 13px;
+      font-size: 12px;
       table-layout: fixed;
     }
     .ranking th, .ranking td {
-      padding: 8px 8px;
+      padding: 7px 4px;
       border-bottom: 1px solid #2b2b2b;
       text-align: left;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .ranking th:nth-child(1), .ranking td:nth-child(1) { width: 52px; }
-    .ranking th:nth-child(2), .ranking td:nth-child(2) { width: 110px; }
-    .ranking th:nth-child(3), .ranking td:nth-child(3) { width: 150px; }
-    .ranking th:nth-child(4), .ranking td:nth-child(4) { width: 110px; }
+    .ranking th:nth-child(1), .ranking td:nth-child(1) { width: 12%; }
+    .ranking th:nth-child(2), .ranking td:nth-child(2) { width: 23%; }
+    .ranking th:nth-child(3), .ranking td:nth-child(3) { width: 25%; }
+    .ranking th:nth-child(4), .ranking td:nth-child(4) { width: 40%; }
     .ranking th:last-child, .ranking td:last-child { text-align: right; }
     .top-row {
       display: flex;
@@ -314,7 +312,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-1';
+const APP_VERSION = '2026-09-15-ultralight-2';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -490,13 +488,13 @@ function renderGenreStats(genres, lockedForToday = false) {
     const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
 
     const allRows = (g.ranking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' +
-      escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' +
+      escapeHtml(r.name || '') + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
     ).join('');
 
     const personalRows = (g.personalRanking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(state.name || '') + '</td><td>' +
-      escapeHtml(formatDateClient(r.date)) + '</td><td>' + formatTime(r.bestMs) + '</td></tr>'
+      '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' +
+      escapeHtml(state.name || '') + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
     ).join('');
 
     const canStart = g.unlocked && !lockedForToday;
@@ -513,12 +511,12 @@ function renderGenreStats(genres, lockedForToday = false) {
 
       '<h3>自分のベストタイムランキング（暦日）</h3>' +
       (personalRows
-        ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>ユーザー</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + personalRows + '</tbody></table></div>'
+        ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>タイム</th><th>ユーザー</th><th>日付</th></tr></thead><tbody>' + personalRows + '</tbody></table></div>'
         : '<div class="best">まだ記録がありません。</div>') +
 
       '<h3>全ユーザーベストタイムランキング（暦日）</h3>' +
       (allRows
-        ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>ユーザー</th><th>日付</th><th>ベスト</th></tr></thead><tbody>' + allRows + '</tbody></table></div>'
+        ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>タイム</th><th>ユーザー</th><th>日付</th></tr></thead><tbody>' + allRows + '</tbody></table></div>'
         : '<div class="best">まだ記録がありません。</div>') +
     '</div>';
   }).join('');
@@ -875,7 +873,7 @@ function formatDateClient(dateKey) {
   const dt = new Date(y, mo - 1, d);
   const w = ['日','月','火','水','木','金','土'][dt.getDay()];
 
-  return mo + '月' + d + '日（' + w + '）';
+  return mo + '/' + d + '（' + w + '）';
 }
 
 function formatTime(ms) {

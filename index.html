@@ -151,6 +151,14 @@
     .personal-ranking th:nth-child(1), .personal-ranking td:nth-child(1) { width: 18%; }
     .personal-ranking th:nth-child(2), .personal-ranking td:nth-child(2) { width: 36%; }
     .personal-ranking th:nth-child(3), .personal-ranking td:nth-child(3) { width: 46%; }
+    .mini-ranking-title {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .attempt-ranking th:nth-child(1), .attempt-ranking td:nth-child(1) { width: 20%; }
+    .attempt-ranking th:nth-child(2), .attempt-ranking td:nth-child(2) { width: 28%; }
+    .attempt-ranking th:nth-child(3), .attempt-ranking td:nth-child(3) { width: 52%; }
     .ranking th:last-child, .ranking td:last-child { text-align: right; }
     .top-row {
       display: flex;
@@ -360,6 +368,7 @@
       </div>
 
       <div id="failStatus" class="fail-status"></div>
+      <div id="validAttemptRanking"></div>
 
       <div id="genreStats"></div>
     </div>
@@ -400,7 +409,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-11';
+const APP_VERSION = '2026-09-15-ultralight-12';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -568,6 +577,7 @@ function makeDefaultDashboard() {
     lockedForToday: false,
     questionCount: 20,
     clearTimeMs: 120000,
+    validAttemptRanking: [],
     genres: GENRES.map((g, i) => ({
       id: g.id,
       name: g.name,
@@ -611,6 +621,19 @@ function applyDashboard(d) {
     ? '過去成績を読み込み中...'
     : '今日の失格：' + d.todayFails + ' / ' + d.failLimit;
   failStatus.classList.toggle('danger', d.todayFails >= d.failLimit);
+
+  const validBox = document.getElementById('validAttemptRanking');
+  const validRows = (d.validAttemptRanking || []).slice(0, 5);
+  validBox.innerHTML =
+    '<div class="mini-ranking-title">今日のトライ回数</div>' +
+    (validRows.length
+      ? '<table class="ranking attempt-ranking"><thead><tr><th>順位</th><th>回数</th><th>ユーザー</th></tr></thead><tbody>' +
+        validRows.map((r, i) =>
+          '<tr><td>' + (i + 1) + '</td><td>' + r.count + '回</td><td>' + escapeHtml(r.name || '') + '</td></tr>'
+        ).join('') +
+        '</tbody></table>'
+      : '<div class="best">まだ記録がありません。</div>');
+
   renderGenreStats(d.genres, d.lockedForToday);
 }
 

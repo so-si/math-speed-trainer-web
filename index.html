@@ -221,6 +221,65 @@
     }
     .feedback.ok { color: #7bd88f; }
     .feedback.ng { color: #ff6b6b; }
+    .compare-box {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #303030;
+      border-radius: 14px;
+      background: #111;
+    }
+    .compare-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .compare-main {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .compare-bars {
+      display: grid;
+      gap: 9px;
+    }
+    .compare-line {
+      display: grid;
+      grid-template-columns: 58px 1fr 66px;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .compare-line strong {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .bar-track {
+      height: 10px;
+      background: #2a2a2a;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #777;
+    }
+    .bar-fill.best {
+      background: #aaa;
+    }
+    .compare-summary {
+      margin-top: 12px;
+      font-weight: 800;
+    }
+    .compare-summary.new-best {
+      font-size: 18px;
+    }
+    .compare-sub {
+      margin-top: 5px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
     .result-grid { display: grid; gap: 10px; margin: 18px 0; }
     .result-row {
       display: flex;
@@ -313,7 +372,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-7';
+const APP_VERSION = '2026-09-15-ultralight-8';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -927,6 +986,69 @@ function giveUp() {
   finish(false, 'give_up', q, state.input === '' ? null : Number(state.input));
 }
 
+function getPersonalBestComparison(genreId, elapsedMs) {
+  const genre = state.dashboard && (state.dashboard.genres || []).find(g => g.id === genreId);
+  const history = genre && Array.isArray(genre.personalRanking) ? genre.personalRanking : [];
+  const past = history
+    .map(r => Number(r.bestMs || 0))
+    .filter(ms => ms > 0);
+
+  if (!past.length) {
+    return {
+      bestMs: null,
+      diffMs: null,
+      rank: 1,
+      isNewBest: true
+    };
+  }
+
+  const bestMs = Math.min(...past);
+  const diffMs = elapsedMs - bestMs;
+  const rank = 1 + past.filter(ms => ms < elapsedMs).length;
+
+  return {
+    bestMs,
+    diffMs,
+    rank,
+    isNewBest: elapsedMs < bestMs
+  };
+}
+
+function renderFinishComparison(elapsedMs, effectiveSuccess) {
+  if (!effectiveSuccess) return '';
+
+  const c = getPersonalBestComparison(state.genre, elapsedMs);
+
+  if (c.bestMs == null) {
+    return '<div class="compare-box">' +
+      '<div class="compare-title">自己ベスト比較</div>' +
+      '<div class="compare-main">初記録</div>' +
+      '<div class="compare-sub">今回 ' + formatTime(elapsedMs) + '</div>' +
+    '</div>';
+  }
+
+  const diffAbs = Math.abs(c.diffMs);
+  const diffText = c.diffMs < 0
+    ? formatTime(diffAbs) + ' 更新'
+    : c.diffMs === 0
+      ? '自己ベストと同タイム'
+      : formatTime(diffAbs) + ' 遅い';
+
+  const pct = Math.min(100, Math.max(8, (c.bestMs / Math.max(elapsedMs, c.bestMs)) * 100));
+
+  return '<div class="compare-box">' +
+    '<div class="compare-title">自己ベスト比較</div>' +
+    '<div class="compare-bars">' +
+      '<div class="compare-line"><span>今回</span><div class="bar-track"><div class="bar-fill current" style="width:100%"></div></div><strong>' + formatTime(elapsedMs) + '</strong></div>' +
+      '<div class="compare-line"><span>過去最短</span><div class="bar-track"><div class="bar-fill best" style="width:' + pct.toFixed(1) + '%"></div></div><strong>' + formatTime(c.bestMs) + '</strong></div>' +
+    '</div>' +
+    '<div class="compare-summary ' + (c.isNewBest ? 'new-best' : '') + '">' +
+      (c.isNewBest ? '自己ベスト更新：' : '過去最短との差：') + diffText +
+    '</div>' +
+    '<div class="compare-sub">過去暦日ベスト内順位：' + c.rank + '位相当</div>' +
+  '</div>';
+}
+
 async function finish(success, failReason, failedQuestion, userAnswer) {
   if (state.finished) return;
   state.finished = true;
@@ -937,8 +1059,20 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
   const effectiveSuccess = success && elapsedMs <= 120000;
   const reason = effectiveSuccess ? '' : (failReason || 'time_over');
 
+  const title = effectiveSuccess ? 'クリア！' : '失格';
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultBody').innerHTML =
+    '<div class="result-row"><span>タイム</span><strong>' + formatTime(elapsedMs) + '</strong></div>' +
+    '<div class="result-row"><span>回答</span><strong>' + (effectiveSuccess ? 20 : state.index) + ' / 20</strong></div>' +
+    (effectiveSuccess
+      ? '<div class="result-row"><span>判定</span><strong>次ジャンル解放条件クリア</strong></div>'
+      : '<div class="result-row"><span>判定</span><strong>' + failReasonLabel(reason) + '</strong></div>') +
+    renderFinishComparison(elapsedMs, effectiveSuccess);
+
+  show('result');
+
   try {
-    const response = await apiRequest('saveAttempt', {
+    await apiRequest('saveAttempt', {
       ...authPayload(),
       genre: state.genre,
       success: effectiveSuccess,
@@ -954,25 +1088,10 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
         : null
     });
 
-    state.dashboard = response.dashboard || null;
+    refreshDashboard().catch(e => console.warn(e));
   } catch (e) {
-    if (isAuthError(e)) {
-      resetToLogin('セッションが切れました。もう一度PINを入力してください。');
-      return;
-    }
-    alert('結果保存に失敗しました。\n' + e.message);
+    console.warn('結果保存に失敗しました。', e);
   }
-
-  const title = effectiveSuccess ? 'クリア！' : '失格';
-  document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultBody').innerHTML =
-    '<div class="result-row"><span>タイム</span><strong>' + formatTime(elapsedMs) + '</strong></div>' +
-    '<div class="result-row"><span>回答</span><strong>' + (effectiveSuccess ? 20 : state.index) + ' / 20</strong></div>' +
-    (effectiveSuccess
-      ? '<div class="result-row"><span>判定</span><strong>次ジャンル解放条件クリア</strong></div>'
-      : '<div class="result-row"><span>判定</span><strong>' + failReasonLabel(reason) + '</strong></div>');
-
-  show('result');
 }
 
 function failReasonLabel(reason) {

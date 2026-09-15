@@ -203,6 +203,14 @@
       color: #fff;
       font-size: 30px;
       font-weight: 800;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key:active {
+      transform: scale(.97);
+      background: #2b2b2b;
     }
     .key.submit { background: #fff; color: #000; font-size: 20px; }
     .feedback {
@@ -281,19 +289,19 @@
     <div id="question" class="question"></div>
     <div id="feedback" class="feedback"></div>
     <div id="answer" class="answer">&nbsp;</div>
-    <div class="keypad">
-      <button class="key" onclick="digit('7')">7</button>
-      <button class="key" onclick="digit('8')">8</button>
-      <button class="key" onclick="digit('9')">9</button>
-      <button class="key" onclick="digit('4')">4</button>
-      <button class="key" onclick="digit('5')">5</button>
-      <button class="key" onclick="digit('6')">6</button>
-      <button class="key" onclick="digit('1')">1</button>
-      <button class="key" onclick="digit('2')">2</button>
-      <button class="key" onclick="digit('3')">3</button>
-      <button class="key" onclick="backspace()">⌫</button>
-      <button class="key" onclick="digit('0')">0</button>
-      <button class="key submit" onclick="submitAnswer()">決定</button>
+    <div class="keypad" id="keypad">
+      <button type="button" class="key" data-digit="7">7</button>
+      <button type="button" class="key" data-digit="8">8</button>
+      <button type="button" class="key" data-digit="9">9</button>
+      <button type="button" class="key" data-digit="4">4</button>
+      <button type="button" class="key" data-digit="5">5</button>
+      <button type="button" class="key" data-digit="6">6</button>
+      <button type="button" class="key" data-digit="1">1</button>
+      <button type="button" class="key" data-digit="2">2</button>
+      <button type="button" class="key" data-digit="3">3</button>
+      <button type="button" class="key" data-action="backspace">⌫</button>
+      <button type="button" class="key" data-digit="0">0</button>
+      <button type="button" class="key submit" data-action="submit">決定</button>
     </div>
   </div>
 
@@ -305,23 +313,8 @@
 </div>
 
 <script>
-async function purgeLegacyPwaCaches() {
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  } catch (e) {
-    console.warn('legacy cache cleanup failed', e);
-  }
-}
-purgeLegacyPwaCaches();
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-1402';
+const APP_VERSION = '2026-09-15-1415';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -667,6 +660,27 @@ function showQuestion() {
   document.getElementById('feedback').className = 'feedback';
   updateAnswer();
 }
+
+function bindKeypad() {
+  const keypad = document.getElementById('keypad');
+  if (!keypad || keypad.dataset.bound === '1') return;
+  keypad.dataset.bound = '1';
+
+  keypad.addEventListener('pointerdown', e => {
+    const btn = e.target.closest('button.key');
+    if (!btn) return;
+    e.preventDefault();
+
+    if (btn.dataset.digit != null) {
+      digit(btn.dataset.digit);
+    } else if (btn.dataset.action === 'backspace') {
+      backspace();
+    } else if (btn.dataset.action === 'submit') {
+      submitAnswer();
+    }
+  }, { passive: false });
+}
+bindKeypad();
 
 function digit(d) {
   if (!state.accepting) return;

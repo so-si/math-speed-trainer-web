@@ -148,6 +148,9 @@
     .ranking th:nth-child(2), .ranking td:nth-child(2) { width: 23%; }
     .ranking th:nth-child(3), .ranking td:nth-child(3) { width: 25%; }
     .ranking th:nth-child(4), .ranking td:nth-child(4) { width: 40%; }
+    .personal-ranking th:nth-child(1), .personal-ranking td:nth-child(1) { width: 18%; }
+    .personal-ranking th:nth-child(2), .personal-ranking td:nth-child(2) { width: 36%; }
+    .personal-ranking th:nth-child(3), .personal-ranking td:nth-child(3) { width: 46%; }
     .ranking th:last-child, .ranking td:last-child { text-align: right; }
     .top-row {
       display: flex;
@@ -221,6 +224,30 @@
     }
     .feedback.ok { color: #7bd88f; }
     .feedback.ng { color: #ff6b6b; }
+    @keyframes rankPop {
+      0% { transform: scale(.88); opacity: 0; }
+      65% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .ranking-celebration {
+      margin-bottom: 14px;
+      padding: 16px;
+      border: 1px solid #555;
+      border-radius: 14px;
+      background: #181818;
+      text-align: center;
+      animation: rankPop .35s ease-out;
+    }
+    .ranking-celebration-main {
+      font-size: 24px;
+      font-weight: 900;
+    }
+    .ranking-celebration-sub {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #bbb;
+    }
+
     .compare-box {
       margin-top: 16px;
       padding: 14px;
@@ -373,7 +400,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-15-ultralight-9';
+const APP_VERSION = '2026-09-15-ultralight-10';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -694,8 +721,7 @@ function renderGenreStats(genres, lockedForToday = false) {
     ).join('');
 
     const personalRows = (g.personalRanking || []).map((r, i) =>
-      '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' +
-      escapeHtml(state.name || '') + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
+      '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
     ).join('');
 
     const canStart = g.unlocked && !lockedForToday;
@@ -710,12 +736,12 @@ function renderGenreStats(genres, lockedForToday = false) {
       '</div>' +
       '<div class="best">今日のベスト：<strong>' + todayBest + '</strong></div>' +
 
-      '<h3>自分のベストタイムランキング（暦日）</h3>' +
+      '<h3>${escapeHtml(state.name || "")}の記録</h3>' +
       (personalRows
-        ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>タイム</th><th>ユーザー</th><th>日付</th></tr></thead><tbody>' + personalRows + '</tbody></table></div>'
+        ? '<div class="ranking-wrap"><table class="ranking personal-ranking"><thead><tr><th>順位</th><th>タイム</th><th>日付</th></tr></thead><tbody>' + personalRows + '</tbody></table></div>'
         : '<div class="best">まだ記録がありません。</div>') +
 
-      '<h3>全ユーザーベストタイムランキング（暦日）</h3>' +
+      '<h3>みんなの記録</h3>' +
       (allRows
         ? '<div class="ranking-wrap"><table class="ranking"><thead><tr><th>順位</th><th>タイム</th><th>ユーザー</th><th>日付</th></tr></thead><tbody>' + allRows + '</tbody></table></div>'
         : '<div class="best">まだ記録がありません。</div>') +
@@ -1015,6 +1041,29 @@ function getPersonalBestComparison(genreId, elapsedMs) {
   };
 }
 
+function getRankingEntryStatus(genreId, elapsedMs) {
+  const genre = state.dashboard && (state.dashboard.genres || []).find(g => g.id === genreId);
+  if (!genre) return { personal: false, everyone: false };
+
+  const personal = (genre.personalRanking || [])
+    .map(r => Number(r.bestMs || 0))
+    .filter(ms => ms > 0);
+  const everyone = (genre.ranking || [])
+    .map(r => Number(r.bestMs || 0))
+    .filter(ms => ms > 0);
+
+  const personalQualifies =
+    personal.length < 5 || elapsedMs < Math.max(...personal);
+
+  const everyoneQualifies =
+    everyone.length < 5 || elapsedMs < Math.max(...everyone);
+
+  return {
+    personal: personalQualifies,
+    everyone: everyoneQualifies
+  };
+}
+
 function renderFinishComparison(elapsedMs, effectiveSuccess) {
   if (!effectiveSuccess) return '';
 
@@ -1061,8 +1110,20 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
   const reason = effectiveSuccess ? '' : (failReason || 'time_over');
 
   const title = effectiveSuccess ? 'クリア！' : '失格';
+  const rankingEntry = effectiveSuccess
+    ? getRankingEntryStatus(state.genre, elapsedMs)
+    : { personal: false, everyone: false };
+
   document.getElementById('resultTitle').textContent = title;
   document.getElementById('resultBody').innerHTML =
+    (rankingEntry.personal || rankingEntry.everyone
+      ? '<div class="ranking-celebration">' +
+          '<div class="ranking-celebration-main">ランキング入り！</div>' +
+          '<div class="ranking-celebration-sub">' +
+            (rankingEntry.everyone ? 'みんなの記録 TOP5' : escapeHtml(state.name || '') + 'の記録 TOP5') +
+          '</div>' +
+        '</div>'
+      : '') +
     '<div class="result-row"><span>タイム</span><strong>' + formatTime(elapsedMs) + '</strong></div>' +
     '<div class="result-row"><span>回答</span><strong>' + (effectiveSuccess ? 20 : state.index) + ' / 20</strong></div>' +
     (effectiveSuccess

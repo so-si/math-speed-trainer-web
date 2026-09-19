@@ -372,9 +372,9 @@
         <strong>ルール</strong><br>
         ・1セットは20問です。<br>
         ・<strong>1問でも間違えたら、その時点で失格</strong>です。<br>
-        ・20問すべて正解し、<strong>120秒以内</strong>に終えると次のジャンルが解放されます。<br>
+        ・20問すべて正解し、<strong>180秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日10回</strong>に達すると、その日は挑戦できません。<br>
-        ・120秒超過は失格1回として数えます。<br>
+        ・180秒超過は失格1回として数えます。<br>
         ・ギブアップはその場で挑戦終了になります。1日10回の失格カウントには含めません。<br>
         ・各ジャンルの「今日のベスト」と「全ユーザー横断の暦日ベストTOP10」を記録します。
       </div>
@@ -390,7 +390,7 @@
     <div class="top-row">
       <div id="counter"></div>
       <button class="secondary" onclick="giveUp()">ギブアップ</button>
-      <div id="timer" class="timer">120.0秒</div>
+      <div id="timer" class="timer">180.0秒</div>
     </div>
     <div class="progress"><div id="progressBar"></div></div>
     <div id="question" class="question"></div>
@@ -421,7 +421,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-18-ultralight-15';
+const APP_VERSION = '2026-09-19-ultralight-16';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -591,7 +591,7 @@ function makeDefaultDashboard() {
     failLimit: 10,
     lockedForToday: false,
     questionCount: 20,
-    clearTimeMs: 120000,
+    clearTimeMs: 180000,
     validAttemptRanking: [],
     genres: GENRES.map((g, i) => ({
       id: g.id,
@@ -816,7 +816,7 @@ function startChallenge(genre) {
 
   show('game');
   showQuestion();
-  startMasterTimer(state.dashboard.clearTimeMs || 120000);
+  startMasterTimer(state.dashboard.clearTimeMs || 180000);
 }
 
 function generateSet(genre, count) {
@@ -1232,7 +1232,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
   clearInterval(state.timerId);
 
   const elapsedMs = Math.round(performance.now() - state.startedAt);
-  const effectiveSuccess = success && elapsedMs <= 120000;
+  const effectiveSuccess = success && elapsedMs <= 180000;
   const reason = effectiveSuccess ? '' : (failReason || 'time_over');
 
   const title = effectiveSuccess ? 'クリア！' : '失格';
@@ -1293,7 +1293,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
 
 function failReasonLabel(reason) {
   if (reason === 'wrong_answer') return '誤答';
-  if (reason === 'time_over') return '120秒超過';
+  if (reason === 'time_over') return '180秒超過';
   if (reason === 'give_up') return 'ギブアップ';
   return '失格';
 }

@@ -370,7 +370,7 @@
 
       <div class="rules">
         <strong>ルール</strong><br>
-        ・1セットは20問です。<br>
+        ・1セットは原則20問です。<strong>二桁の足し算・引き算のみ10問</strong>です。<br>
         ・<strong>1問でも間違えたら、その時点で失格</strong>です。<br>
         ・20問すべて正解し、<strong>180秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日10回</strong>に達すると、その日は挑戦できません。<br>
@@ -421,7 +421,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-19-ultralight-16';
+const APP_VERSION = '2026-09-19-ultralight-17';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -791,6 +791,10 @@ function renderGenreStats(genres, lockedForToday = false) {
   }).join('');
 }
 
+function questionCountForGenre(genre) {
+  return genre === 'two_digit_add_sub' ? 10 : 20;
+}
+
 function startChallenge(genre) {
   if (!genre || !state.dashboard) return;
 
@@ -806,7 +810,7 @@ function startChallenge(genre) {
   state.genre = genre;
   state.questions = generateSet(
     genre,
-    state.dashboard.questionCount || 20
+    questionCountForGenre(genre)
   );
   state.index = 0;
   state.input = '';
@@ -913,7 +917,8 @@ function showQuestion() {
   state.remainderInput = '';
   state.answerStage = state.genre === 'division_remainder' ? 'quotient' : 'single';
   state.accepting = true;
-  document.getElementById('counter').textContent = (state.index + 1) + ' / 20';
+  document.getElementById('counter').textContent =
+    (state.index + 1) + ' / ' + state.questions.length;
   document.getElementById('question').textContent = q.text;
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className = 'feedback';
@@ -1026,7 +1031,7 @@ function submitAnswer() {
 
   state.index++;
 
-  if (state.index >= 20) {
+  if (state.index >= state.questions.length) {
     finish(true, '', q, state.genre === 'division_remainder'
       ? state.quotientInput + ' あまり ' + state.remainderInput
       : Number(state.input));
@@ -1251,7 +1256,9 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
         '</div>'
       : '') +
     '<div class="result-row"><span>タイム</span><strong>' + formatTime(elapsedMs) + '</strong></div>' +
-    '<div class="result-row"><span>回答</span><strong>' + (effectiveSuccess ? 20 : state.index) + ' / 20</strong></div>' +
+    '<div class="result-row"><span>回答</span><strong>' +
+      (effectiveSuccess ? state.questions.length : state.index) +
+      ' / ' + state.questions.length + '</strong></div>' +
     (effectiveSuccess
       ? '<div class="result-row"><span>判定</span><strong>次ジャンル解放条件クリア</strong></div>'
       : '<div class="result-row"><span>判定</span><strong>' + failReasonLabel(reason) + '</strong></div>') +
@@ -1265,7 +1272,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
     success: effectiveSuccess,
     elapsedMs,
     failReason: reason,
-    answeredCount: effectiveSuccess ? 20 : state.index,
+    answeredCount: effectiveSuccess ? state.questions.length : state.index,
     failedQuestion: failedQuestion ? failedQuestion.text : '',
     userAnswer: userAnswer,
     correctAnswer: failedQuestion

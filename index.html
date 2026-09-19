@@ -421,7 +421,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-19-ultralight-18';
+const APP_VERSION = '2026-09-19-ultralight-19';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -770,7 +770,10 @@ function renderGenreStats(genres, lockedForToday = false) {
       '<div class="genre-head">' +
         '<div>' +
           '<div class="genre-level">レベル' + (genreIndex + 1) + '</div>' +
-          '<div class="genre-name">' + escapeHtml(g.name) + '</div>' +
+          '<div class="genre-name">' +
+            escapeHtml(g.name) +
+            '（' + questionCountForGenre(g.id) + '問）' +
+          '</div>' +
         '</div>' +
         '<div class="badge ' + (g.cleared ? 'clear' : (g.unlocked ? '' : 'lock')) + '">' +
           (g.cleared ? 'クリア済み' : (g.unlocked ? '挑戦可' : '未解放')) +

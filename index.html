@@ -376,7 +376,7 @@
         ・失格が<strong>1日10回</strong>に達すると、その日は挑戦できません。<br>
         ・180秒超過は失格1回として数えます。<br>
         ・ギブアップはその場で挑戦終了になります。1日10回の失格カウントには含めません。<br>
-        ・「みんなの記録」は、各ユーザーの全期間ベスト1件だけを使ってTOP5を表示します。
+        ・「みんなの記録」は、各ユーザーの全期間ベスト1件だけを使ってTOP10を表示します。
       </div>
 
       <div id="failStatus" class="fail-status"></div>
@@ -421,7 +421,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-23-ultralight-22';
+const APP_VERSION = '2026-09-23-ultralight-23';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -764,7 +764,7 @@ function renderGenreStats(genres, lockedForToday = false) {
       seenStudents.add(sid);
       uniqueRanking.push(r);
     });
-    const allRows = uniqueRanking.slice(0, 5).map((r, i) =>
+    const allRows = uniqueRanking.slice(0, 10).map((r, i) =>
       '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' +
       escapeHtml(r.name || '') + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
     ).join('');
@@ -1126,7 +1126,7 @@ function getRankingEntryStatus(genreId, elapsedMs) {
 
   const wouldImproveMyGlobalBest = !myGlobalBest || elapsedMs < Number(myGlobalBest.bestMs || 0);
   const everyoneQualifies = wouldImproveMyGlobalBest &&
-    (everyone.length < 5 || elapsedMs < Math.max(...everyone));
+    (everyone.length < 10 || elapsedMs < Math.max(...everyone));
 
   return {
     personal: personalQualifies,
@@ -1269,7 +1269,7 @@ async function finish(success, failReason, failedQuestion, userAnswer) {
       ? '<div class="ranking-celebration">' +
           '<div class="ranking-celebration-main">ランキング入り！</div>' +
           '<div class="ranking-celebration-sub">' +
-            (rankingEntry.everyone ? 'みんなの記録 TOP5' : escapeHtml(state.name || '') + 'の記録 TOP5') +
+            (rankingEntry.everyone ? 'みんなの記録 TOP10' : escapeHtml(state.name || '') + 'の記録 TOP5') +
           '</div>' +
         '</div>'
       : '') +

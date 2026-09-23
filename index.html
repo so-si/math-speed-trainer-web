@@ -376,7 +376,7 @@
         ・失格が<strong>1日10回</strong>に達すると、その日は挑戦できません。<br>
         ・180秒超過は失格1回として数えます。<br>
         ・ギブアップはその場で挑戦終了になります。1日10回の失格カウントには含めません。<br>
-        ・各ジャンルの「今日のベスト」と「全ユーザー横断の暦日ベストTOP10」を記録します。
+        ・「みんなの記録」は、各ユーザーの全期間ベスト1件だけを使ってTOP5を表示します。
       </div>
 
       <div id="failStatus" class="fail-status"></div>
@@ -421,7 +421,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-09-21-ultralight-21';
+const APP_VERSION = '2026-09-23-ultralight-22';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -756,7 +756,15 @@ function renderGenreStats(genres, lockedForToday = false) {
   box.innerHTML = genres.map((g, genreIndex) => {
     const todayBest = g.todayBestMs == null ? '—' : formatTime(g.todayBestMs);
 
-    const allRows = (g.ranking || []).map((r, i) =>
+    const uniqueRanking = [];
+    const seenStudents = new Set();
+    (g.ranking || []).forEach(r => {
+      const sid = String(r.studentId || r.name || '');
+      if (!sid || seenStudents.has(sid)) return;
+      seenStudents.add(sid);
+      uniqueRanking.push(r);
+    });
+    const allRows = uniqueRanking.slice(0, 5).map((r, i) =>
       '<tr><td>' + (i + 1) + '</td><td>' + formatTime(r.bestMs) + '</td><td>' +
       escapeHtml(r.name || '') + '</td><td>' + escapeHtml(formatDateClient(r.date)) + '</td></tr>'
     ).join('');
@@ -1109,15 +1117,16 @@ function getRankingEntryStatus(genreId, elapsedMs) {
   const personal = (genre.personalRanking || [])
     .map(r => Number(r.bestMs || 0))
     .filter(ms => ms > 0);
-  const everyone = (genre.ranking || [])
-    .map(r => Number(r.bestMs || 0))
-    .filter(ms => ms > 0);
+  const everyoneRows = (genre.ranking || []).filter(r => Number(r.bestMs || 0) > 0);
+  const myGlobalBest = everyoneRows.find(r => String(r.studentId || '') === String(state.studentId || ''));
+  const everyone = everyoneRows.map(r => Number(r.bestMs || 0));
 
   const personalQualifies =
     personal.length < 5 || elapsedMs < Math.max(...personal);
 
-  const everyoneQualifies =
-    everyone.length < 5 || elapsedMs < Math.max(...everyone);
+  const wouldImproveMyGlobalBest = !myGlobalBest || elapsedMs < Number(myGlobalBest.bestMs || 0);
+  const everyoneQualifies = wouldImproveMyGlobalBest &&
+    (everyone.length < 5 || elapsedMs < Math.max(...everyone));
 
   return {
     personal: personalQualifies,

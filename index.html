@@ -395,7 +395,7 @@
 
       <div class="rules">
         <strong>ルール</strong><br>
-        <div class="rules-highlight"><span class="rules-new">NEW!</span>レベル1〜4は<strong>10問</strong>、レベル5〜7は<strong>5問</strong>です。<div class="rules-note">なので、みんなレベル4以上もやってください！</div></div>
+        <div class="rules-highlight"><span class="rules-new">NEW!</span>レベル1〜4は<strong>20問のまま</strong>、レベル5〜7は<strong>5問</strong>になりました。<div class="rules-note">レベル5からは5問なので、みんな上のレベルにも挑戦してください！</div></div>
         ・<strong>1問でも間違えたら、その時点で失格</strong>です。<br>
         ・各コースの<strong>全問題を正解</strong>し、<strong>180秒以内</strong>に終えると次のジャンルが解放されます。<br>
         ・失格が<strong>1日10回</strong>に達すると、その日は挑戦できません。<br>
@@ -446,7 +446,7 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxaH7UesXEkw9HMcuoiv5j1knakn96OtILmGlFLy0t_-VF1mspdz_znwazkubzfLyOT/exec';
-const APP_VERSION = '2026-11-02-ultralight-28';
+const APP_VERSION = '2026-11-02-ultralight-29';
 
 const GENRES = [
   { id: 'one_digit_add_sub', name: '一桁の足し算・引き算' },
@@ -838,7 +838,7 @@ function questionCountForGenre(genre) {
     'two_digit_add_sub',
     'division_remainder',
     'two_digit_times_one'
-  ].includes(genre) ? 5 : 10;
+  ].includes(genre) ? 5 : 20;
 }
 
 function startChallenge(genre) {
